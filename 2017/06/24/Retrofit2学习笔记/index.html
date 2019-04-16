@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<meta name="author" content="张志强">
+
+
+
+<meta name="description" content="时至今日，Android的网络框架不再像之前那么到处都是，随着Google把HttpClient直接删掉，似乎意味着Android越来越成熟。网络框架中的佼佼者Volley也不再那么光鲜，取而代之的是Retrofit和okHttp。 这两个网络库都是Square这个牛逼的公司出品的,这个公司出品了好多开源库, 大家有兴趣可以去了解下. 作为一个资深的Android从业者(呵呵~), 一直没有好好研">
+<meta name="keywords" content="Android,retrofit,retrofit2">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Retrofit2学习笔记">
+<meta property="og:url" content="http://zzqhost.com/2017/06/24/Retrofit2学习笔记/index.html">
+<meta property="og:site_name" content="张志强的博客">
+<meta property="og:description" content="时至今日，Android的网络框架不再像之前那么到处都是，随着Google把HttpClient直接删掉，似乎意味着Android越来越成熟。网络框架中的佼佼者Volley也不再那么光鲜，取而代之的是Retrofit和okHttp。 这两个网络库都是Square这个牛逼的公司出品的,这个公司出品了好多开源库, 大家有兴趣可以去了解下. 作为一个资深的Android从业者(呵呵~), 一直没有好好研">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/Retrofit2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0_1">
+<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/Retrofit2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0_2">
+<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/Retrofit2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0_3">
+<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/Retrofit2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0_4">
+<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/Retrofit2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0_5">
+<meta property="og:updated_time" content="2019-04-16T08:01:13.732Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Retrofit2学习笔记">
+<meta name="twitter:description" content="时至今日，Android的网络框架不再像之前那么到处都是，随着Google把HttpClient直接删掉，似乎意味着Android越来越成熟。网络框架中的佼佼者Volley也不再那么光鲜，取而代之的是Retrofit和okHttp。 这两个网络库都是Square这个牛逼的公司出品的,这个公司出品了好多开源库, 大家有兴趣可以去了解下. 作为一个资深的Android从业者(呵呵~), 一直没有好好研">
+<meta name="twitter:image" content="http://7tsyym.com1.z0.glb.clouddn.com/Retrofit2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0_1">
+
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>Retrofit2学习笔记 | 张志强的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: false,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: true
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?0cbe0839852542956fe17f62ec5746ce";
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+
+
+</head></html>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/1_zzqhost.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">张志强</a></h1>
+        </hgroup>
+
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="false">
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class="no-result">No results found <i class="fa fa-spinner fa-pulse"></i></p>
+        
+
+
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">0</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">1</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">2</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">3</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">4</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">5</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/d">6</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">7</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">8</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">9</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">10</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">11</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">12</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">13</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">14</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">15</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">16</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">17</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">18</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/l">19</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">20</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">21</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">22</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">23</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">24</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/d">25</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">26</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">27</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">28</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/e">29</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">30</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">31</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">32</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">33</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">34</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">35</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">36</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">37</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">38</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/ ">39</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">40</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">41</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">42</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">43</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/1">44</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/6">45</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/3">46</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">47</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">48</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">49</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">50</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">51</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">52</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">53</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">54</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">55</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">56</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">57</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">58</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">59</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">60</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">61</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">62</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">63</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">64</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">65</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/l">66</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">67</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">68</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">69</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/1">70</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/6">71</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/3">72</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">73</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">74</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">75</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/m">76</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">77</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/ ">78</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">79</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">80</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">81</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">82</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">83</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">84</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">85</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">86</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/u">87</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">88</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">89</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">90</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">91</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">92</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">93</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">94</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">95</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">96</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">97</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">98</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">99</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">100</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">101</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">102</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">103</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">104</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">105</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">106</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">107</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">108</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">109</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">110</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/u">111</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">112</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">113</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">114</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">115</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">116</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">117</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">118</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">119</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">120</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/w">121</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">122</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/k">123</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">124</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">125</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">张志强</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/1_zzqhost.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">张志强</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我">
+</nav>
+      <div class="body-wrap"><article id="post-Retrofit2学习笔记" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/06/24/Retrofit2学习笔记/" class="article-date">
+      <time datetime="2017-06-24T13:50:21.000Z" itemprop="datePublished">2017-06-24</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Retrofit2学习笔记
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/Android/">Android</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/retrofit/">retrofit</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/retrofit2/">retrofit2</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>时至今日，Android的网络框架不再像之前那么到处都是，随着Google把HttpClient直接删掉，似乎意味着Android越来越成熟。网络框架中的佼佼者Volley也不再那么光鲜，取而代之的是Retrofit和okHttp。 这两个网络库都是Square这个牛逼的公司出品的,这个公司出品了好多开源库, 大家有兴趣可以去了解下.</p>
+<p>作为一个资深的Android从业者(呵呵~), 一直没有好好研究过retrofit, 这次下定决心要好好研究一下包括Retrofit + okHttp + RxJava等一系列新技术, 免得被时代抛弃.</p>
+<a id="more"></a>
+<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>如果看Retrofit的源码会发现其实质上就是对okHttp的封装，使用面向接口的方式进行网络请求，利用动态生成的代理类封装了网络接口请求的底层, 其将请求返回javaBean. 它非常适合于restful url格式的请求，使用更多的注解方式提供各种功能.</p>
+<h2 id="Restful"><a href="#Restful" class="headerlink" title="Restful"></a>Restful</h2><p>Retrofit 把REST API返回的数据转化为Java对象，就像ORM框架那样，把数据库内的存储的数据转化为相应的Java bean对象。<br>那么我们知道Retrofit是一个类型安全的网络框架，而且它是使用REST API的，接下来我们看看什么是REST吧。</p>
+<ul>
+<li><strong>Resources Representational State Transfer</strong></li>
+<li>翻译过来就是<strong>资源表现层状态转化</strong></li>
+<li>具体请参考我的博客<a href="/2017/01/03/理解RESTful架构/" title="理解RESTful架构">理解RESTful架构</a></li>
+<li>更多关于REST的介绍：<a href="https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/08.3.md" target="_blank" rel="noopener">什么是REST - GitHub</a></li>
+</ul>
+<h1 id="以一个简单的例子来入门"><a href="#以一个简单的例子来入门" class="headerlink" title="以一个简单的例子来入门"></a>以一个简单的例子来入门</h1><h2 id="引入Retrofit库"><a href="#引入Retrofit库" class="headerlink" title="引入Retrofit库"></a>引入Retrofit库</h2><ul>
+<li><p>首先，在gralde文件中引入后续要用到的库。(以下是我参考的其它博文中的,其中的版本可能有点老,先不管那么多了,能跑起来再说, 等我试验完后把它们更新成最新的版本)</p>
+<pre><code>compile &apos;com.squareup.retrofit:retrofit:2.0.0-beta2&apos;
+compile &apos;com.squareup.retrofit:converter-gson:2.0.0-beta2&apos;
+compile &apos;com.squareup.retrofit:adapter-rxjava:2.0.0-beta2&apos;
+
+compile &apos;com.squareup.okhttp:okhttp:2.4.0&apos;
+
+compile &apos;io.reactivex:rxjava:1.0.14&apos;
+compile &apos;io.reactivex:rxandroid:1.0.1&apos;
+</code></pre></li>
+</ul>
+<p>接下来我们写一个例子,并一步步进行分析。</p>
+<h2 id="小例子"><a href="#小例子" class="headerlink" title="小例子"></a>小例子</h2><ul>
+<li><p>创建两个类: 实体Bean和服务接口类</p>
+<pre><code>public static class Contributor {
+    public final String login;
+    public final int contributions;
+    public Contributor(String login, int contributions) {
+        this.login = login;
+        this.contributions = contributions;
+    }
+    @Override
+    public String toString() {
+        return &quot;Contributor{&quot; +
+            &quot;login=&apos;&quot; + login + &apos;\&apos;&apos; +
+            &quot;, contributions=&quot; + contributions +
+            &apos;}&apos;;
+    }
+}
+
+public interface GitHub {
+    @GET(&quot;/repos/{owner}/{repo}/contributors&quot;)
+    Call&lt;List&lt;Contributor&gt;&gt; contributors(
+        @Path(&quot;owner&quot;) String owner,
+        @Path(&quot;repo&quot;) String repo);
+}
+</code></pre></li>
+<li>接下来创建Retrofit2的实例，并设置BaseUrl和Gson转换。<pre><code>Retrofit retrofit = new Retrofit.Builder()
+        .baseUrl(&quot;https://api.github.com&quot;)
+        .addConverterFactory(GsonConverterFactory.create())
+        .client(new OkHttpClient())
+        .build();
+</code></pre></li>
+<li>创建请求服务，并为网络请求方法设置参数<pre><code>GitHub gitHubService = retrofit.create(GitHub.class);
+Call&lt;List&lt;Contributor&gt;&gt; call = gitHubService.contributors(&quot;square&quot;, &quot;retrofit&quot;);
+</code></pre></li>
+<li>最后，请求网络，并获取响应<pre><code>try{
+    Response&lt;List&lt;Contributor&gt;&gt; response = call.execute(); // 同步
+    Log.d(TAG, &quot;response:&quot; + response.body().toString());
+} catch (IOException e) {
+    e.printStackTrace();
+}
+</code></pre></li>
+<li><strong>Call是Retrofit中重要的一个概念，代表被封装成单个请求/响应的交互行为</strong><ul>
+<li>通过调用Retrofit2的execute（<strong>同步</strong>）或者enqueue（<strong>异步</strong>）方法，发送请求到网络服务器，并返回一个响应（Response）。</li>
+<li>它具有如下特点<ul>
+<li>独立的请求和响应模块</li>
+<li>从响应处理分离出请求创建</li>
+<li>每个实例只能使用一次。</li>
+<li>Call可以被克隆。</li>
+<li>支持同步和异步方法。</li>
+<li>能够被取消。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>由于call只能被执行一次，所以按照上面的顺序再次执行Call将会得到如下错误。<pre><code>java.lang.IllegalStateException: Already executed
+</code></pre></li>
+<li><p>我们可以通过clone，来克隆一份call，从而可以重新调用一次这个接口</p>
+<pre><code>// clone
+Call&lt;List&lt;Contributor&gt;&gt; call1 = call.clone();
+// 5. 请求网络，异步
+call1.enqueue(new Callback&lt;List&lt;Contributor&gt;&gt;() {
+    @Override
+    public void onResponse(Response&lt;List&lt;Contributor&gt;&gt; response, Retrofit retrofit) {
+        Log.d(TAG, &quot;response:&quot; + response.body().toString());
+    }
+
+    @Override
+    public void onFailure(Throwable t) {
+
+    }
+});
+</code></pre></li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>下面我们总结一下使用retrofit的基本步骤</p>
+<ol>
+<li>定义网络请求的实体bean和服务接口类</li>
+<li>创建retrofit2的实例<ul>
+<li>在这里需要设置baseUrl</li>
+<li>设置一个OkHttpClient类的实例,可以是默认的,也可以是定制的,如果有需要可以整体app使用一个单例实例. 有空再单独说一下这个事.</li>
+<li>设置Gson等转换器</li>
+</ul>
+</li>
+<li>创建请求服务代理类, 并为网络请求方法设置参数,生成一个Call对象</li>
+<li>请求网络, 并获取响应<ul>
+<li>支持execute（同步）和 enqueue（异步）</li>
+<li>Call只能执行一次</li>
+<li>能够被取消</li>
+</ul>
+</li>
+</ol>
+<h1 id="retrofit-用法"><a href="#retrofit-用法" class="headerlink" title="retrofit 用法"></a>retrofit 用法</h1><h2 id="服务接口类"><a href="#服务接口类" class="headerlink" title="服务接口类"></a>服务接口类</h2><p>Retrofit需要注解接口的请求方法和方法的参数来表明该请求需要怎么样的处理。</p>
+<h3 id="请求方法"><a href="#请求方法" class="headerlink" title="请求方法"></a>请求方法</h3><ul>
+<li>每一个方法必须要有一个HTTP注解来标明请求的方式和相对URL。有五种内置的注解方式：GET、POST、PUT、DELETE以及HEAD。资源的相对URL需要在注解里面明确给出：<pre><code>@GET(&quot;users/list&quot;)
+</code></pre></li>
+<li>当然作为特殊用法: 你也可以将query参数直接写死在URL里<pre><code>@GET(&quot;users/list?sort=desc&quot;)
+</code></pre></li>
+</ul>
+<h3 id="URL操作"><a href="#URL操作" class="headerlink" title="URL操作"></a>URL操作</h3><p>包括路径的替换, 参数的替换, 请求头参数, post请求, 表单等</p>
+<h4 id="路径替换和参数"><a href="#路径替换和参数" class="headerlink" title="路径替换和参数"></a>路径替换和参数</h4><ol>
+<li><p>路径替换</p>
+<pre><code>interface SomeService {
+ @GET(&quot;/some/endpoint/{thing}&quot;)
+ Call&lt;SomeResponse&gt; someEndpoint(
+ @Path(&quot;thing&quot;) String thing);
+}
+
+someService.someEndpoint(&quot;bar&quot;);
+
+// GET /some/endpoint/bar HTTP/1.1
+</code></pre></li>
+<li><p>固定查询参数</p>
+<pre><code>// 服务
+interface SomeService {
+ @GET(&quot;/some/endpoint?fixed=query&quot;)
+ Call&lt;SomeResponse&gt; someEndpoint();
+}
+
+// 方法调用
+someService.someEndpoint();
+
+// 请求头
+// GET /some/endpoint?fixed=query HTTP/1.1
+</code></pre></li>
+<li><p>动态参数</p>
+<pre><code>// 服务
+interface SomeService {
+ @GET(&quot;/some/endpoint&quot;)
+ Call&lt;SomeResponse&gt; someEndpoint(
+ @Query(&quot;dynamic&quot;) String dynamic);
+}
+
+// 方法调用
+someService.someEndpoint(&quot;query&quot;);
+
+// 请求头
+// GET /some/endpoint?dynamic=query HTTP/1.1
+</code></pre></li>
+<li><p>动态参数（Map）</p>
+<pre><code>// 服务
+interface SomeService {
+ @GET(&quot;/some/endpoint&quot;)
+ Call&lt;SomeResponse&gt; someEndpoint(
+ @QueryMap Map&lt;String, String&gt; dynamic);
+}
+
+// 方法调用
+someService.someEndpoint(
+ Collections.singletonMap(&quot;dynamic&quot;, &quot;query&quot;));
+// 请求头
+// GET /some/endpoint?dynamic=query HTTP/1.1
+</code></pre></li>
+<li><p>省略动态参数</p>
+<pre><code>interface SomeService {
+ @GET(&quot;/some/endpoint&quot;)
+ Call&lt;SomeResponse&gt; someEndpoint(
+ @Query(&quot;dynamic&quot;) String dynamic);
+}
+
+// 方法调用
+someService.someEndpoint(null);
+
+// 请求头
+// GET /some/endpoint HTTP/1.1
+</code></pre></li>
+<li><p>固定+动态参数</p>
+<pre><code>interface SomeService {
+ @GET(&quot;/some/endpoint?fixed=query&quot;)
+ Call&lt;SomeResponse&gt; someEndpoint(
+ @Query(&quot;dynamic&quot;) String dynamic);
+}
+
+// 方法调用
+someService.someEndpoint(&quot;query&quot;);
+
+// 请求头
+// GET /some/endpoint?fixed=query&amp;dynamic=query HTTP/1.1
+</code></pre><h4 id="请求头"><a href="#请求头" class="headerlink" title="请求头"></a>请求头</h4></li>
+<li><p>固定头</p>
+<pre><code>interface SomeService {
+ @GET(&quot;/some/endpoint&quot;)
+ @Headers(&quot;Accept-Encoding: application/json&quot;)
+ Call&lt;SomeResponse&gt; someEndpoint();
+}
+
+someService.someEndpoint();
+
+// GET /some/endpoint HTTP/1.1
+// Accept-Encoding: application/json
+</code></pre></li>
+<li><p>动态头</p>
+<pre><code>interface SomeService {
+ @GET(&quot;/some/endpoint&quot;)
+ Call&lt;SomeResponse&gt; someEndpoint(
+ @Header(&quot;Location&quot;) String location);
+}
+
+someService.someEndpoint(&quot;Droidcon NYC 2015&quot;);
+
+// GET /some/endpoint HTTP/1.1
+// Location: Droidcon NYC 2015
+</code></pre></li>
+<li><p>固定+动态头</p>
+<pre><code>interface SomeService {
+    @GET(&quot;/some/endpoint&quot;)
+    @Headers(&quot;Accept-Encoding: application/json&quot;)
+    Call&lt;SomeResponse&gt; someEndpoint(
+        @Header(&quot;Location&quot;) String location);
+}
+
+someService.someEndpoint(&quot;Droidcon NYC 2015&quot;);
+
+// GET /some/endpoint HTTP/1.1
+// Accept-Encoding: application/json
+// Location: Droidcon NYC 2015
+</code></pre><h4 id="post和put请求"><a href="#post和put请求" class="headerlink" title="post和put请求"></a>post和put请求</h4></li>
+<li><p>Post请求，无Body</p>
+<pre><code>interface SomeService {
+ @POST(&quot;/some/endpoint&quot;)
+ Call&lt;SomeResponse&gt; someEndpoint();
+}
+
+someService.someEndpoint();
+
+// POST /some/endpoint?fixed=query HTTP/1.1
+// Content-Length: 0
+</code></pre></li>
+<li><p>Post请求有Body</p>
+<pre><code>interface SomeService {
+ @POST(&quot;/some/endpoint&quot;)
+ Call&lt;SomeResponse&gt; someEndpoint(
+ @Body SomeRequest body);
+}
+
+someService.someEndpoint();
+
+// POST /some/endpoint HTTP/1.1
+// Content-Length: 3
+// Content-Type: greeting
+//
+// Hi!
+</code></pre></li>
+<li><p>表单编码字段</p>
+<pre><code>interface SomeService {
+ @FormUrlEncoded
+ @POST(&quot;/some/endpoint&quot;)
+ Call&lt;SomeResponse&gt; someEndpoint(
+     @Field(&quot;name1&quot;) String name1,
+     @Field(&quot;name2&quot;) String name2);
+}
+
+someService.someEndpoint(&quot;value1&quot;, &quot;value2&quot;);
+
+// POST /some/endpoint HTTP/1.1
+// Content-Length: 25
+// Content-Type: application/x-www-form-urlencoded
+//
+// name1=value1&amp;name2=value2
+</code></pre></li>
+<li><p>表单编码字段（Map）</p>
+<pre><code>interface SomeService {
+ @FormUrlEncoded
+ @POST(&quot;/some/endpoint&quot;)
+ Call&lt;SomeResponse&gt; someEndpoint(
+     @FieldMap Map&lt;String, String&gt; names);
+}
+
+someService.someEndpoint(
+ // ImmutableMap是OKHttp中的工具类
+ ImmutableMap.of(&quot;name1&quot;, &quot;value1&quot;, &quot;name2&quot;, &quot;value2&quot;));
+
+// POST /some/endpoint HTTP/1.1
+// Content-Length: 25
+// Content-Type: application/x-www-form-urlencoded
+//
+// name1=value1&amp;name2=value2
+</code></pre></li>
+<li><p>可以通过<strong>@Multipart注解方法</strong><br>来发送Mutipart请求。每个部分需要使用@Part来注解。</p>
+<pre><code>@Multipart
+@PUT(&quot;user/photo&quot;)
+Call&lt;User&gt; updateUser(@Part(&quot;photo&quot;) RequestBody photo, @Part(&quot;description&quot;) RequestBody description);
+
+// 多个请求部分需要使用Retrofit的converter或者是自己实现 RequestBody来处理自己内部的数据序列化。
+</code></pre></li>
+</ol>
+<h2 id="上传和下载"><a href="#上传和下载" class="headerlink" title="上传和下载"></a>上传和下载</h2><ul>
+<li>这几个未深入的学习, 着急学习的同学可以参考<a href="http://blog.csdn.net/lmj623565791/article/details/51304204" target="_blank" rel="noopener">Retrofit2 完全解析 探索与okhttp之间的关系</a></li>
+</ul>
+<h3 id="单文件上传-Multipart"><a href="#单文件上传-Multipart" class="headerlink" title="单文件上传@Multipart"></a>单文件上传@Multipart</h3><h3 id="多文件上传-PartMap"><a href="#多文件上传-PartMap" class="headerlink" title="多文件上传@PartMap"></a>多文件上传@PartMap</h3><h3 id="下载文件"><a href="#下载文件" class="headerlink" title="下载文件"></a>下载文件</h3><ul>
+<li>这个其实我觉得直接使用okhttp就好了，使用retrofit去做这个事情真的有点瞎用的感觉~~</li>
+<li>…</li>
+</ul>
+<h2 id="Retrofit配置"><a href="#Retrofit配置" class="headerlink" title="Retrofit配置"></a>Retrofit配置</h2><p>Retrofit类会通过你定义的API接口转化为可调用的对象。默认情况下，Retrofit会返还给你合理的默认值，但也允许你进行指定。</p>
+<h3 id="转化器（Converters）"><a href="#转化器（Converters）" class="headerlink" title="转化器（Converters）"></a>转化器（Converters）</h3><ul>
+<li>默认情况下，Retrofit只能将HTTP体反序列化为OKHttp的 ResonseBody 类型，而且只能接收 RequestBody类型作为 @Body。</li>
+<li>转化器的加入可以用于支持其他的类型。以下六个同级模块采用了常用的序列化库来为你提供方便。<pre><code>Gson: com.squareup.retrofit2:converter-gson
+Jackson: com.squareup.retrofit2:converter-jackson
+Moshi: com.squareup.retrofit2:converter-moshi
+Protobuf: com.squareup.retrofit2:converter-protobuf
+Wire: com.squareup.retrofit2:converter-wire
+Simple XML: com.squareup.retrofit2:converter-simplexml
+Scalars (primitives, boxed, and String): com.squareup.retrofit2:converter-scalars
+</code></pre></li>
+<li><p>下面提供一个使用GsonConverterFactory类生成 GitHubService的接口实现gson反序列化的例子。</p>
+<pre><code>Retrofit retrofit = new Retrofit.Builder()
+    .baseUrl(&quot;https://api.github.com&quot;)
+    .addConverterFactory(GsonConverterFactory.create())
+    .build();
+
+GitHubService service = retrofit.create(GitHubService.class);
+</code></pre></li>
+<li>自定义转化器<ul>
+<li>如果你需要与没有使用Retrofit提供的内容格式的API进行交互的话或者是你希望使用一个不同的库来实现现有的格式，你也可以轻松创建使用自己的转化器。</li>
+<li>你需要创建一个继承自Converter.Factory的类并且在构建适配器的时候加入到实例里面。</li>
+</ul>
+</li>
+</ul>
+<h3 id="可插拔的执行机制-Multiple-pluggable-execution-mechanisms"><a href="#可插拔的执行机制-Multiple-pluggable-execution-mechanisms" class="headerlink" title="可插拔的执行机制(Multiple, pluggable execution mechanisms)"></a>可插拔的执行机制(Multiple, pluggable execution mechanisms)</h3><pre><code>interface GitHubService {
+ @GET(&quot;/repos/{owner}/{repo}/contributors&quot;)
+ // Call 代表的是CallBack回调机制
+ Call&lt;List&lt;Contributor&gt;&gt; repoContributors(
+     @Path(&quot;owner&quot;) String owner,
+     @Path(&quot;repo&quot;) String repo);
+
+ @GET(&quot;/repos/{owner}/{repo}/contributors&quot;)
+ // Observable 代表的是RxJava的执行
+ Observable&lt;List&lt;Contributor&gt;&gt; repoContributors2(
+     @Path(&quot;owner&quot;) String owner,
+     @Path(&quot;repo&quot;) String repo);
+
+ @GET(&quot;/repos/{owner}/{repo}/contributors&quot;)
+ Future&lt;List&lt;Contributor&gt;&gt; repoContributors3(
+     @Path(&quot;owner&quot;) String owner,
+     @Path(&quot;repo&quot;) String repo);
+}
+</code></pre><ul>
+<li>注意，要在构建Retrofit时指定适配器模式为RxJavaCallAdapterFactory<pre><code>Retrofit retrofit = new Retrofit.Builder()
+    .addConverterFactory(GsonConverterFactory.create())
+    .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+    .baseUrl(&quot;http://www.duitang.com&quot;)
+    .build();
+</code></pre></li>
+<li>否则，会报出如下错误：<pre><code>Caused by: java.lang.IllegalArgumentException: Could not locate call adapter for rx.Observable&lt;com.bzh.sampleretrofit.ClubBean&gt;. Tried:
+* retrofit.ExecutorCallAdapterFactory
+</code></pre></li>
+</ul>
+<h3 id="配置OkHttpClient"><a href="#配置OkHttpClient" class="headerlink" title="配置OkHttpClient"></a>配置OkHttpClient</h3><ul>
+<li>这个需要简单提一下，很多时候，比如你使用retrofit需要统一的log管理，给每个请求添加统一的header等，这些都应该通过okhttpclient去操作，比如addInterceptor</li>
+<li>例如：<pre><code>OkHttpClient client = new OkHttpClient.Builder().addInterceptor(new Interceptor()//log，统一的header等
+{
+    @Override
+    public okhttp3.Response intercept(Chain chain) throws IOException
+    {
+        return null;
+    }
+}).build();
+</code></pre></li>
+<li>或许你需要更多的配置，你可以单独写一个OkhttpClient的单例生成类，在这个里面完成你所需的所有的配置，然后将OkhttpClient实例通过方法公布出来，设置给retrofit。</li>
+<li>设置方式：<pre><code>Retrofit retrofit = new Retrofit.Builder()
+    .callFactory(OkHttpUtils.getClient())
+    .build();
+</code></pre></li>
+<li>callFactory方法接受一个okhttp3.Call.Factory对象，OkHttpClient即为此Factory类的一个实现类</li>
+</ul>
+<h2 id="混淆"><a href="#混淆" class="headerlink" title="混淆"></a>混淆</h2><p>如果你的工程中使用了代码混淆，那么你的配置中需要添加一下的几行<br>        -dontwarn retrofit2.<strong><br>        -keep class retrofit2.</strong> { *; }<br>        -keepattributes Signature<br>        -keepattributes Exceptions</p>
+<h1 id="Retrofit2结构"><a href="#Retrofit2结构" class="headerlink" title="Retrofit2结构"></a>Retrofit2结构</h1><ul>
+<li>Retrofit作为一个上层框架，自然有很多底层lib库支持，okio和okhttp都包含其中。<br><img src="http://7tsyym.com1.z0.glb.clouddn.com/Retrofit2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0_1" alt="1"></li>
+</ul>
+<h1 id="Retrofit执行模式"><a href="#Retrofit执行模式" class="headerlink" title="Retrofit执行模式"></a>Retrofit执行模式</h1><ul>
+<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/Retrofit2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0_2" alt="2"></li>
+<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/Retrofit2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0_3" alt="3"></li>
+<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/Retrofit2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0_4" alt="4"></li>
+<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/Retrofit2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0_5" alt="5"></li>
+</ul>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p><a href="http://blog.csdn.net/lmj623565791/article/details/51304204" target="_blank" rel="noopener">Retrofit2 完全解析 探索与okhttp之间的关系</a><br><a href="http://www.jianshu.com/p/3e13e5d34531" target="_blank" rel="noopener">Retrofit2.0使用总结</a><br><a href="http://blog.csdn.net/biezhihua/article/details/49232289" target="_blank" rel="noopener">好用的网络请求库Retrofit2（入门及讲解）</a><br><a href="http://www.jianshu.com/p/442a29da7b23" target="_blank" rel="noopener">Retrofit 2.0非常简单的入门（翻译官方文档）</a></p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2017/06/24/Retrofit2学习笔记/">Retrofit2学习笔记</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">张志强</a></p>
+        <p><span>发布时间:</span>2017-06-24, 21:50:21</p>
+        <p><span>最后更新:</span>2019-04-16, 16:01:13</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2017/06/24/Retrofit2学习笔记/" title="Retrofit2学习笔记">http://zzqhost.com/2017/06/24/Retrofit2学习笔记/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://zzqhost.com/2017/06/24/Retrofit2学习笔记/　　作者: 张志强" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target="_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2017/07/05/字符编码/">
+                    字符编码
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/06/18/Android打渠道包方案总结/">
+                    Android打渠道包方案总结
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Restful"><span class="toc-number">1.1.</span> <span class="toc-text">Restful</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#以一个简单的例子来入门"><span class="toc-number">2.</span> <span class="toc-text">以一个简单的例子来入门</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#引入Retrofit库"><span class="toc-number">2.1.</span> <span class="toc-text">引入Retrofit库</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#小例子"><span class="toc-number">2.2.</span> <span class="toc-text">小例子</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-number">2.3.</span> <span class="toc-text">总结</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#retrofit-用法"><span class="toc-number">3.</span> <span class="toc-text">retrofit 用法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#服务接口类"><span class="toc-number">3.1.</span> <span class="toc-text">服务接口类</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#请求方法"><span class="toc-number">3.1.1.</span> <span class="toc-text">请求方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#URL操作"><span class="toc-number">3.1.2.</span> <span class="toc-text">URL操作</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#路径替换和参数"><span class="toc-number">3.1.2.1.</span> <span class="toc-text">路径替换和参数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#请求头"><span class="toc-number">3.1.2.2.</span> <span class="toc-text">请求头</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#post和put请求"><span class="toc-number">3.1.2.3.</span> <span class="toc-text">post和put请求</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#上传和下载"><span class="toc-number">3.2.</span> <span class="toc-text">上传和下载</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#单文件上传-Multipart"><span class="toc-number">3.2.1.</span> <span class="toc-text">单文件上传@Multipart</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#多文件上传-PartMap"><span class="toc-number">3.2.2.</span> <span class="toc-text">多文件上传@PartMap</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#下载文件"><span class="toc-number">3.2.3.</span> <span class="toc-text">下载文件</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Retrofit配置"><span class="toc-number">3.3.</span> <span class="toc-text">Retrofit配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#转化器（Converters）"><span class="toc-number">3.3.1.</span> <span class="toc-text">转化器（Converters）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#可插拔的执行机制-Multiple-pluggable-execution-mechanisms"><span class="toc-number">3.3.2.</span> <span class="toc-text">可插拔的执行机制(Multiple, pluggable execution mechanisms)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#配置OkHttpClient"><span class="toc-number">3.3.3.</span> <span class="toc-text">配置OkHttpClient</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#混淆"><span class="toc-number">3.4.</span> <span class="toc-text">混淆</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Retrofit2结构"><span class="toc-number">4.</span> <span class="toc-text">Retrofit2结构</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Retrofit执行模式"><span class="toc-number">5.</span> <span class="toc-text">Retrofit执行模式</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#参考"><span class="toc-number">6.</span> <span class="toc-text">参考</span></a></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录" title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Retrofit2学习笔记　| 张志强的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <section class="youyan" id="comments">
+    <script>
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = 'http://v2.uyan.cc/code/uyan.js?uid=2123716';
+            (d.head || d.body).appendChild(s);
+        }
+    </script>
+    
+    <script> loadComment(); </script>
+
+    <div id="uyan_frame"></div>
+</section>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2017/07/05/字符编码/" title="上一篇: 字符编码">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/06/18/Android打渠道包方案总结/" title="下一篇: Android打渠道包方案总结">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/03/10/Android中JSBridge的原理与实现/">Android中JSBridge的原理与实现</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/02/24/感冒的分类及治疗/">感冒的分类及治疗</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/03/学习nodejs第一天/">学习nodejs第一天</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/27/初入路由器刷机/">初入路由器刷机</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/08/14/ClassLoader详解/">ClassLoader详解</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/07/Android快速加载Dex/">Android快速加载Dex</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/05/字符编码/">字符编码</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/24/Retrofit2学习笔记/">Retrofit2学习笔记</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/18/Android打渠道包方案总结/">Android打渠道包方案总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/17/Android签名原理剖析/">Android签名剖析</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/13/productFlavors的高级用法/">productFlavors的高级用法</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客5/">使用hexo搭建静态博客(五)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客4/">使用hexo搭建静态博客(四)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客3/">使用hexo搭建静态博客(三)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客2/">使用hexo搭建静态博客(二)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客1/">使用hexo搭建静态博客(一)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/04/20/在Tomcat中部署web项目/">在Tomcat中部署web项目</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/11/通过hexo搭建个人博客/">通过hexo搭建个人博客</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/03/理解RESTful架构/">理解RESTful架构</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2017-2019 张志强
+            </div>
+            <div class="footer-right">
+                <!--<a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>-->
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+                Hosted by <a href="https://pages.coding.me" target="_blank" style="font-weight: bold">Coding Pages</a>
+                and Github
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style="display:none">
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style="display:none">
+                        <span id="page-visit" title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

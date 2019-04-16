@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<meta name="author" content="张志强">
+
+
+
+<meta name="description" content="本篇介绍了Android中的apk的签名原理，包括老的签名方法，和新的Apk Signature Scheme V2介绍。使大家能对这一块有一个大致的了解，为快速打渠道包打下理论基础">
+<meta name="keywords" content="Android,签名,APK Signature Scheme v2">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android签名剖析">
+<meta property="og:url" content="http://zzqhost.com/2017/06/17/Android签名原理剖析/index.html">
+<meta property="og:site_name" content="张志强的博客">
+<meta property="og:description" content="本篇介绍了Android中的apk的签名原理，包括老的签名方法，和新的Apk Signature Scheme V2介绍。使大家能对这一块有一个大致的了解，为快速打渠道包打下理论基础">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-1.png">
+<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-2.png">
+<meta property="og:updated_time" content="2019-04-16T08:01:13.732Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Android签名剖析">
+<meta name="twitter:description" content="本篇介绍了Android中的apk的签名原理，包括老的签名方法，和新的Apk Signature Scheme V2介绍。使大家能对这一块有一个大致的了解，为快速打渠道包打下理论基础">
+<meta name="twitter:image" content="http://7tsyym.com1.z0.glb.clouddn.com/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-1.png">
+
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>Android签名剖析 | 张志强的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: false,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: true
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?0cbe0839852542956fe17f62ec5746ce";
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+
+
+</head></html>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/1_zzqhost.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">张志强</a></h1>
+        </hgroup>
+
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="false">
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class="no-result">No results found <i class="fa fa-spinner fa-pulse"></i></p>
+        
+
+
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">0</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">1</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">2</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">3</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">4</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">5</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/d">6</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">7</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">8</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">9</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">10</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">11</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">12</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">13</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">14</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">15</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">16</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">17</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">18</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/l">19</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">20</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">21</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">22</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">23</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">24</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/d">25</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">26</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">27</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">28</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/e">29</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">30</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">31</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">32</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">33</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">34</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">35</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">36</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">37</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">38</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/ ">39</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">40</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">41</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">42</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">43</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/1">44</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/6">45</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/3">46</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">47</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">48</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">49</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">50</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">51</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">52</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">53</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">54</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">55</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">56</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">57</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">58</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">59</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">60</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">61</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">62</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">63</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">64</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">65</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/l">66</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">67</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">68</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">69</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/1">70</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/6">71</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/3">72</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">73</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">74</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">75</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/m">76</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">77</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/ ">78</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">79</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">80</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">81</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">82</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">83</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">84</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">85</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">86</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/u">87</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">88</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">89</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">90</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">91</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">92</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">93</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">94</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">95</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">96</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">97</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">98</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">99</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">100</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">101</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">102</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">103</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">104</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">105</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">106</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">107</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">108</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">109</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">110</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/u">111</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">112</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">113</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">114</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">115</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">116</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">117</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">118</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">119</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">120</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/w">121</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">122</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/k">123</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">124</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">125</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">张志强</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/1_zzqhost.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">张志强</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我">
+</nav>
+      <div class="body-wrap"><article id="post-Android签名原理剖析" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/06/17/Android签名原理剖析/" class="article-date">
+      <time datetime="2017-06-17T14:30:42.000Z" itemprop="datePublished">2017-06-17</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Android签名剖析
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/Android/">Android</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/APK-Signature-Scheme-v2/">APK Signature Scheme v2</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/签名/">签名</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>本篇介绍了Android中的apk的签名原理，包括老的签名方法，和新的Apk Signature Scheme V2介绍。使大家能对这一块有一个大致的了解，为快速打渠道包打下理论基础<br><a id="more"></a></p>
+<h1 id="概念介绍"><a href="#概念介绍" class="headerlink" title="概念介绍"></a>概念介绍</h1><p>网上已有多篇分析签名的类似文章，但是都有一个共同的问题，就是概念混乱，混乱的一塌糊涂。<br>在了解APK签名原理之前，首先澄清几个概念:</p>
+<ul>
+<li>消息摘要</li>
+<li>MD5, SHA-0, SHA-1, SHA-256</li>
+<li>数字签名</li>
+<li>数字证书</li>
+</ul>
+<h2 id="消息摘要-Message-Digest"><a href="#消息摘要-Message-Digest" class="headerlink" title="消息摘要 -Message Digest"></a>消息摘要 -Message Digest</h2><ul>
+<li>简称摘要，请看<a href="http://en.wikipedia.org/wiki/Message_digest" target="_blank" rel="noopener">英文翻译</a>，是摘要，不是签名，网上几乎所有APK签名分析的文章都混淆了这两个概念。</li>
+<li>简单的说消息摘要就是在消息数据上，执行一个单向的Hash函数，生成一个固定长度的Hash值，这个Hash值即是消息摘要也称为数字指纹：</li>
+<li>消息摘要有以下特点：<ol>
+<li>通过摘要无法推算得出消息本身</li>
+<li>如果修改了消息，那么摘要一定会变化（实际上，由于长明文生成短摘要的Hash必然会产生碰撞），所以这句话并不准确，我们可以改为：很难找到一种模式，修改了消息，而它的摘要不会变化。</li>
+</ol>
+</li>
+<li>消息摘要的这种特性，很适合来验证数据的完整性，比如在网络传输过程中下载一个大文件BigFile，我们会同时从网络下载BigFile和BigFile.md5，BigFile.md5保存BigFile的摘要，我们在本地生成BigFile的消息摘要，和BigFile.md5比较，如果内容相同，则表示下载过程正确。</li>
+<li>注意，消息摘要只能保证消息的完整性，并不能保证消息的不可篡改性。</li>
+</ul>
+<h2 id="MD5-SHA-0-SHA-1-SHA-256"><a href="#MD5-SHA-0-SHA-1-SHA-256" class="headerlink" title="MD5, SHA-0, SHA-1, SHA-256"></a>MD5, SHA-0, SHA-1, SHA-256</h2><ul>
+<li>这些都是摘要生成算法，和签名没有半毛钱关系。如果非要说他们和签名有关系，那就是签名是要借助于摘要技术。</li>
+<li>这里提前剧透下, SHA-256是SHA-1的升级版，现在Android签名使用的默认算法都已经升级到SHA-256了</li>
+</ul>
+<h2 id="数字签名-Signature"><a href="#数字签名-Signature" class="headerlink" title="数字签名 - Signature"></a>数字签名 - Signature</h2><ul>
+<li>数字签名，百度百科对数字签名有非常清楚的介绍。我这里再罗嗦一下，不懂的去看百度百科。</li>
+<li>数字签名就是信息的发送者用自己的私钥对消息摘要加密产生一个字符串，加密算法确保别人无法伪造生成这段字符串，这段数字串也是对信息的发送者发送信息真实性的一个有效证明。</li>
+<li>数字签名是 <strong>非对称密钥加密技术 + 数字摘要技术</strong> 的结合。</li>
+<li>数字签名技术是将信息摘要用发送者的私钥加密，与原文一起传送给接收者。接收者只有用发送者的公钥才能解密被加密的信息摘要，然后接收者用相同的Hash函数对收到的原文产生一个信息摘要，与解密的信息摘要做比对。如果相同，则说明收到的信息是完整的，在传输过程中没有被修改；不同则说明信息被修改过，因此数字签名能保证信息的完整性。并且由于只有发送者才有加密摘要的私钥，所以我们可以确定信息一定是发送者发送的。</li>
+</ul>
+<h2 id="数字证书-Certificate"><a href="#数字证书-Certificate" class="headerlink" title="数字证书 - Certificate"></a>数字证书 - Certificate</h2><ul>
+<li>数字证书是一个经 <em>证书授权中心</em> <strong>数字签名</strong> 的包含公开密钥拥有者信息以及公开密钥的文件。CERT.RSA包含了一个数字签名以及一个数字证书。</li>
+<li>需要注意的是Android APK中的CERT.RSA证书是自签名的，并不需要这个证书是第三方权威机构发布或者认证的，用户可以在本地机器自行生成这个自签名证书。</li>
+</ul>
+<h1 id="Apk老的签名方法"><a href="#Apk老的签名方法" class="headerlink" title="Apk老的签名方法"></a>Apk老的签名方法</h1><p>我们姑且叫它为v1吧，与后边出现的v2相对应。</p>
+<h2 id="签名三兄弟"><a href="#签名三兄弟" class="headerlink" title="签名三兄弟"></a>签名三兄弟</h2><ul>
+<li>从我们解压出来的APK目录里面可以看到有一个META-INF目录，里面保存的三个文件就是我们签名过程中生成的东西，就是这仨货，我们叫它们三兄弟吧，把它们搞清楚你就精通签名啦：<ul>
+<li><strong>MANIFEST.MF</strong>：所有文件的摘要信息，但不包括它们仨自己</li>
+<li><strong>CERT.SF</strong>：保存的是MANIFEST.MF的摘要值，以及MANIFEST.MF中每一个摘要项的摘要值</li>
+<li><strong>CERT.RSA</strong>：保存的是利用密钥对CERT.SF进行加密生成的数字签名和签名时用到的数字证书，数字证书保存的就是公钥和签名算法</li>
+</ul>
+</li>
+</ul>
+<h2 id="签名工具"><a href="#签名工具" class="headerlink" title="签名工具"></a>签名工具</h2><ul>
+<li>jarsigner<ul>
+<li>JDK中有keytool和jarsigner两个工具</li>
+<li>keytool用于产生加密用的key</li>
+<li>jarsigner用于对APK进行签名</li>
+<li>这两个文件都可以在JAVA的bin目录下找到</li>
+</ul>
+</li>
+<li><strong>signapk</strong><ul>
+<li>signapk是android提供的APK签名工具，使用方法如下：<pre><code>signapk [-w] publickey.x509[.pem] privatekey.pk8 input.jar output.jar  
+</code></pre><ul>
+<li>publickey.x509.pem包含证书和证书链，证书和证书链中包含了公钥和加密算法</li>
+<li>privatekey.pk8是私钥</li>
+<li>input.jar是需要签名的jar</li>
+<li>output.jar是签名结果</li>
+</ul>
+</li>
+<li>signapk的实现在android/build/tools/signapk/SignApk.Java中，可自行查看源码，后边会从代码的角度来分析一下，是<strong>如何生成签名三兄弟</strong>的。</li>
+</ul>
+</li>
+<li>IDE<ul>
+<li>Android Studio中可以创建keystore和使用已有的keystore</li>
+<li>在菜单栏–&gt;build–&gt;Generate Signed APK中即可进行操作</li>
+</ul>
+</li>
+<li><strong>jarsign和signapk</strong><ul>
+<li>关于这两个工具开始的时候很容易混淆，他们俩到底有什么区别吗？</li>
+<li>其实很好理解，jarsign和signapk两个工具都可以进行Android中的签名，他们俩的签名算法没什么区别,它们的区别在于签名时使用的文件不一样</li>
+<li>jarsign是Java本生自带的一个工具，它可以对jar进行签名的。它签名时使用的是keystore文件</li>
+<li>而signapk是后面专门为了Android应用程序apk进行签名的工具。它签名时使用的是pk8,x509.pem文件</li>
+</ul>
+</li>
+</ul>
+<h2 id="签名过程"><a href="#签名过程" class="headerlink" title="签名过程"></a>签名过程</h2><ol>
+<li>下面分析signapk的源码，来过一遍签名的过程。源码路径在<strong>android/build/tools/signapk/SignApk.Java</strong></li>
+<li>生成三兄弟的具体过程如下<ul>
+<li><strong>生成MANIFEST.MF</strong><ul>
+<li>遍历inputJar中的每一个文件，利用SHA1算法生成这些文件的信息摘要</li>
+<li>生成MAINFEST.MF文件，这个文件包含了input jar包内所有文件内容的摘要值。</li>
+<li>注意，不会生成META-INF目录的三个文件的摘要值（有的快速产生渠道包的方案即利用的这一点） MANIFEST.MF、CERT.SF、CERT.RSA</li>
+</ul>
+</li>
+<li><strong>生成CERT.SF</strong> CERT.SF中保存的是MANIFEST.MF的摘要值，以及MANIFEST.MF中每一个摘要项的摘要值。</li>
+<li><strong>生成CERT.RSA</strong><ul>
+<li>这个文件保存了签名和公钥证书。签名的生成一定会有私钥参与，签名用到的信息摘要就是CERT.SF内容</li>
+<li>最终保存在CERT.RSA中的是CERT.SF的数字签名，签名使用privateKey生成的，签名算法会在publicKey中定义。同时还会把publicKey存放在CERT.RSA中，也就是说CERT.RSA包含了签名和签名用到的证书。并且要求这个证书是自签名的。</li>
+</ul>
+</li>
+<li><strong>最后就生成签名三兄弟啦！</strong></li>
+</ul>
+</li>
+<li>验签<ul>
+<li>Android系统在验证的时候会根据数字证书提供的公钥和解密算法进行解密</li>
+<li>然后拿解密出来的摘要信息（hash序列）与手机本地文件生成的摘要信息进行比对，如果之前APK被篡改或所用签名与发布时不一致，就会导致解密出来的摘要信息与本地不一致，从而达到验证的目的。</li>
+</ul>
+</li>
+</ol>
+<h1 id="APK-Signature-Scheme-v2"><a href="#APK-Signature-Scheme-v2" class="headerlink" title="APK Signature Scheme v2"></a>APK Signature Scheme v2</h1><p>在 Android 7.0 Nougat 中引入了全新的 APK Signature Scheme v2，以下以<strong>新的签名方案</strong>来称呼。所以，作为Android开发者，还得再学习一项新技能。</p>
+<h2 id="原因"><a href="#原因" class="headerlink" title="原因"></a>原因</h2><p>为什么谷歌要做这个事情呢？第一点毋庸置疑，肯定是处于安全性的考虑，之前的校验方式开发者可以在打包之后对apk做很多处理，第二为了性能考虑，安装校验的时候不需要再解压缩校验，从而提升安装速度（说句玩笑话，个人感觉没什么鸟用，也不需要关系）</p>
+<h2 id="V2带来了什么变化？"><a href="#V2带来了什么变化？" class="headerlink" title="V2带来了什么变化？"></a>V2带来了什么变化？</h2><ol>
+<li>由于在 v1 中仅验证未解压的文件内容，因此，在 APK 签署后可进行许多修改 - 可以移动甚至重新压缩文件。事实上，编译过程中要用到的 zipalign 工具就是这么做的，它用于根据正确的字节限制调整 ZIP 条目，以改进运行时性能。而且我们也可以利用这个东西，在打包之后修改META-INF目录下面的内容，或者修改Zip的注释来实现多渠道的打包，在v1签名中都可以校验通过</li>
+<li>v2 签名将验证归档中的所有字节，而不是单个 ZIP 条目，因此，在签署后无法再运行 zipalign。正因如此，现在，在编译过程中，Google将压缩、调整和签署合并成一步完成。</li>
+<li>如有任何自定义任务篡改 APK 文件或对其进行后处理（无论以任何方式），那么v2 签名会有作废的风险，从而导致您的 APK 与 Android 7.0 及更高版本不兼容。</li>
+</ol>
+<h2 id="应对变化"><a href="#应对变化" class="headerlink" title="应对变化"></a>应对变化</h2><ol>
+<li>如果我们选择手动签名（比如使用命令行）那么 Android SDK 中提供了一个名为 apksigner 的新工具，该工具可同时提供 v1 和 v2 APK 签署与验证。请注意，如果您使用 v2 签名，则在运行 apksigner之前，必须先运行 zipalign。</li>
+<li>来自 JDK 的 jarsigner 工具与 Android v2 签名不兼容，因此，如果您要保留 v2 签名，您不能用它来重新签署 APK。</li>
+<li>如果我们还想使用之前的打包方式，不做修改，那么Google也是为我们提供了配置方法的用来关闭v2签名：<pre><code>v1SigningEnabled false
+v2SigningEnabled false
+</code></pre></li>
+</ol>
+<h2 id="新的签名方案就是一种扩展的zip格式"><a href="#新的签名方案就是一种扩展的zip格式" class="headerlink" title="新的签名方案就是一种扩展的zip格式"></a>新的签名方案就是一种扩展的zip格式</h2><p>APK Signature Scheme v2其实是对zip格式进行了一个扩展，如图所示<br><img src="http://7tsyym.com1.z0.glb.clouddn.com/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-1.png" alt="对比zip格式 "></p>
+<p>大家可以看到：</p>
+<ul>
+<li>新的签名方案会在ZIP文件格式的 Central Directory 区块所在文件位置的前面添加一个APK Signing Block区块，下面按照ZIP文件的格式来分析新应用签名方案签名后的APK包。</li>
+<li>整个APK（ZIP文件格式）会被分为以下四个区块：<ul>
+<li>Contents of ZIP entries（from offset 0 until the start of APK Signing Block）</li>
+<li>APK Signing Block</li>
+<li>ZIP Central Directory</li>
+<li>ZIP End of Central Directory</li>
+<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-2.png" alt="扩展后的zip格式"></li>
+</ul>
+</li>
+<li><strong>其中</strong>：应用签名方案的签名信息会被保存在区块2（APK Signing Block）中，而<strong>区块1</strong>（Contents of ZIP entries）、<strong>区块3</strong>（ZIP Central Directory）、<strong>区块4</strong>（ZIP End of Central Directory）是受保护的，在签名后任何对区块1、3、4的修改都逃不过新的应用签名方案的检查。</li>
+<li><a href="http://tech.meituan.com/android-apk-v2-signature-scheme.html" target="_blank" rel="noopener">美团的walle</a>为了找到一种快速打渠道包的方案，对V2的第二区块（APK Signing Block）进行了详细剖析，下面详细介绍一下第2区块（APK Signing Block）</li>
+</ul>
+<h2 id="可扩展的APK-Signature-Scheme-v2-Block"><a href="#可扩展的APK-Signature-Scheme-v2-Block" class="headerlink" title="可扩展的APK Signature Scheme v2 Block"></a>可扩展的APK Signature Scheme v2 Block</h2><p>通过上面的描述，可以看出因为APK包的区块1、3、4都是受保护的，任何修改在签名后对它们的修改，都会在安装过程中被签名校验检测失败，而区块2（APK Signing Block）是不受签名校验规则保护的。我们来看看对区块2格式的描述：</p>
+<table>
+<thead>
+<tr>
+<th>偏移</th>
+<th>字节数</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>@+0</td>
+<td>8</td>
+<td>这个Block的长度（本字段的长度不计算在内）</td>
+</tr>
+<tr>
+<td>@+8</td>
+<td>n</td>
+<td>一组ID-value</td>
+</tr>
+<tr>
+<td>@-24</td>
+<td>8</td>
+<td>这个Block的长度（和第一个字段一样值）</td>
+</tr>
+<tr>
+<td>@-16</td>
+<td>16</td>
+<td>魔数 “APK Sig Block 42”</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>区块2中APK Signing Block是由这几部分组成：2个用来标示这个区块长度的8字节 ＋ 这个区块的魔数（APK Sig Block 42）+ 这个区块所承载的数据（ID-value）。</li>
+<li>我们重点来看一下这个ID-value，它由一个8字节的长度标示＋4字节的ID＋它的负载组成。V2的签名信息是以ID（0x7109871a）的ID-value来保存在这个区块中，不知大家有没有注意这是一组ID-value，也就是说它是可以有若干个这样的ID-value来组成。</li>
+<li><p>Android应用在安装时新的应用签名方案是怎么进行校验的呢？笔者通过翻阅Android相关部分的源码，发现下面代码段是用来处理上面所说的ID-value的:</p>
+<pre><code>public static ByteBuffer findApkSignatureSchemeV2Block(
+        ByteBuffer apkSigningBlock,
+        Result result) throws SignatureNotFoundException {
+    checkByteOrderLittleEndian(apkSigningBlock);
+    // FORMAT:
+    // OFFSET       DATA TYPE  DESCRIPTION
+    // * @+0  bytes uint64:    size in bytes (excluding this field)
+    // * @+8  bytes pairs
+    // * @-24 bytes uint64:    size in bytes (same as the one above)
+    // * @-16 bytes uint128:   magic
+    ByteBuffer pairs = sliceFromTo(apkSigningBlock, 8, apkSigningBlock.capacity() - 24);
+
+    int entryCount = 0;
+    while (pairs.hasRemaining()) {
+        entryCount++;
+        if (pairs.remaining() &lt; 8) {
+            throw new SignatureNotFoundException(
+                    &quot;Insufficient data to read size of APK Signing Block entry #&quot; + entryCount);
+        }
+        long lenLong = pairs.getLong();
+        if ((lenLong &lt; 4) || (lenLong &gt; Integer.MAX_VALUE)) {
+            throw new SignatureNotFoundException(
+                    &quot;APK Signing Block entry #&quot; + entryCount
+                            + &quot; size out of range: &quot; + lenLong);
+        }
+        int len = (int) lenLong;
+        int nextEntryPos = pairs.position() + len;
+        if (len &gt; pairs.remaining()) {
+            throw new SignatureNotFoundException(
+                    &quot;APK Signing Block entry #&quot; + entryCount + &quot; size out of range: &quot; + len
+                            + &quot;, available: &quot; + pairs.remaining());
+        }
+        int id = pairs.getInt();
+        if (id == APK_SIGNATURE_SCHEME_V2_BLOCK_ID) {
+            return getByteBuffer(pairs, len - 4);
+        }
+        result.addWarning(Issue.APK_SIG_BLOCK_UNKNOWN_ENTRY_ID, id);
+        pairs.position(nextEntryPos);
+    }
+
+    throw new SignatureNotFoundException(
+            &quot;No APK Signature Scheme v2 block in APK Signing Block&quot;);
+}
+</code></pre></li>
+<li>上述代码中关键的一个位置是 <strong>if (id == APK_SIGNATURE_SCHEME_V2_BLOCK_ID) {return getByteBuffer(pairs, len - 4);}</strong>，通过源代码可以看出Android是通过查找ID为 APK_SIGNATURE_SCHEME_V2_BLOCK_ID = 0x7109871a 的ID-value，来获取APK Signature Scheme v2 Block，对这个区块中其他的ID-value选择了忽略。</li>
+<li>在APK Signature Scheme v2中没有看到对无法识别的ID，有相关处理的介绍。</li>
+<li>美团的方案就是利用这个漏洞来进行快速渠道包的：<strong>提供一个自定义的ID-value并写入该区域，从而为快速生成渠道包服务</strong></li>
+<li>以上就是对新的应用签名方案进行的分析，并根据它所带来的文件存储格式上的变化，找到了可以利用的ID-value，然后基于这个ID-value来构建了美团新一代渠道包生成工具walle。</li>
+</ul>
+<h2 id="新的签名工具-apksigner"><a href="#新的签名工具-apksigner" class="headerlink" title="新的签名工具-apksigner"></a>新的签名工具-apksigner</h2><p>Android官方文档已经对<a href="https://developer.android.com/studio/command-line/apksigner.html#options-sign-general" target="_blank" rel="noopener">apksigner的使用</a>有比较详细的解释。下面说说实际的操作步骤：</p>
+<h3 id="ZipAlign"><a href="#ZipAlign" class="headerlink" title="ZipAlign"></a>ZipAlign</h3><ul>
+<li>zip对齐，因为APK包的本质是一个zip压缩文档，经过边界对齐方式优化能使包内未压缩的数据有序的排列，从而减少应用程序运行时的内存消耗 ，通过空间换时间的方式提高执行效率（zipalign后的apk包体积增大了100KB左右）。</li>
+<li>打开cmd，把目录切换到SDK的build-tools目录下（例如 E:\SDK\build-tools\25.0.2\），执行：<pre><code>.\zipalign.exe -v -p 4 input.apk output.apk
+</code></pre></li>
+<li>zipalign命令选项不多，说明如下<ul>
+<li>-f : 输出文件覆盖源文件</li>
+<li>-v : 详细的输出log</li>
+<li>-p : outfile.zip should use the same page alignment for all shared object files within infile.zip</li>
+<li>-c : 检查当前APK是否已经执行过Align优化。</li>
+<li>另外上面的数字4是代表按照4字节（32位）边界对齐。</li>
+</ul>
+</li>
+</ul>
+<h3 id="apksigner"><a href="#apksigner" class="headerlink" title="apksigner"></a>apksigner</h3><ol>
+<li>这个工具位于SDK目录的build-tools目录下。必须说明的是，v2签名方式时在Android7.0后才推出的，所以只有版本&gt;25的SDK\build-tools\中才能找到apksigner.jar。</li>
+<li>打开cmd，把目录切到SDK\build-tools\版本号\lib下（例如E:\SDK\build-tools\25.0.2\lib），执行：<pre><code>java -jar apksigner.jar sign
+</code></pre></li>
+<li>参数说明<ul>
+<li>–ks 你的jks路径                   //jks签名证书路径</li>
+<li>–ks-key-alias 你的alias          //生成jks时指定的alias</li>
+<li>–ks-pass pass:你的密码            //KeyStore密码</li>
+<li>–key-pass pass:你的密码           //签署者的密码，即生成jks时指定alias对应的密码</li>
+<li>–out output.apk                 //输出路径</li>
+<li>input.apk                       //被签名的apk</li>
+</ul>
+</li>
+<li>示例<pre><code>java -jar apksigner.jar sign  --ks key.jks  --ks-key-alias releasekey  --ks-pass pass:pp123456  --key-pass pass:pp123456  --out output.apk   input.apk
+</code></pre></li>
+<li>apksigner还支持另外的一些选项，<a href="https://developer.android.com/studio/command-line/apksigner.html#options-sign-general" target="_blank" rel="noopener">详情点击这里</a>。包括指定min-sdk版本、max-sdk版本、输出详细信息、检查apk是否已经签名等等。</li>
+<li>例如检查apk是否已经签名：<pre><code>java -jar apksigner.jar verify -v my.apk
+或
+./apksigner verify -v ~/Desktop/app-release.apk
+</code></pre></li>
+<li>输出的结果如下<pre><code>// 可能是这样 ：
+Verifies
+Verified using v1 scheme (JAR signing): true
+Verified using v2 scheme (APK Signature Scheme v2): true
+Number of signers: 1
+// 或者可能是这样 ：
+Verifies
+Verified using v1 scheme (JAR signing): true
+Verified using v2 scheme (APK Signature Scheme v2): false
+Number of signers: 1
+</code></pre></li>
+</ol>
+<h3 id="总结：两步完成对apk包的v2签名"><a href="#总结：两步完成对apk包的v2签名" class="headerlink" title="总结：两步完成对apk包的v2签名"></a>总结：两步完成对apk包的v2签名</h3><p>zipalign + apksigner，两步走完成对apk包的v2签名。且以上工具位于AndroidSDK目录的build-tools中。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li>至此，终于把Android中签名的方方面面总结了一下。 老的签名方案，新的签名方案，还有SHA-256</li>
+<li>下次再总结一下在V1和V2方式下的各种打渠道包的方案吧</li>
+</ul>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><ul>
+<li><a href="http://blog.csdn.net/kickxxx/article/details/18252881" target="_blank" rel="noopener">APK签名原理</a></li>
+<li><a href="http://www.aichengxu.com/other/4364860.htm" target="_blank" rel="noopener">关于APK签名的一些东西</a></li>
+<li><a href="http://blog.csdn.net/jiangwei0910410003/article/details/50402000" target="_blank" rel="noopener">Android签名机制之签名过程详解</a></li>
+<li><a href="https://source.android.com/security/apksigning/v2" target="_blank" rel="noopener">Google官网: APK Signature Scheme v2</a></li>
+<li><a href="http://www.jianshu.com/p/3a179acc7c4a" target="_blank" rel="noopener">简书文章1</a></li>
+<li><a href="http://www.jianshu.com/p/3fd8542f709a" target="_blank" rel="noopener">简书文章2</a></li>
+<li><a href="http://tech.meituan.com/android-apk-v2-signature-scheme.html" target="_blank" rel="noopener">美团：新一代开源Android渠道包生成工具Walle</a></li>
+<li><a href="http://www.jianshu.com/p/e1e2fd05bb62" target="_blank" rel="noopener">Android开发之通过apksigner对apk进行v2签名</a></li>
+<li><a href="https://developer.android.com/studio/command-line/apksigner.html#options-sign-general" target="_blank" rel="noopener">Google官网： apksigner </a></li>
+</ul>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2017/06/17/Android签名原理剖析/">Android签名剖析</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">张志强</a></p>
+        <p><span>发布时间:</span>2017-06-17, 22:30:42</p>
+        <p><span>最后更新:</span>2019-04-16, 16:01:13</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2017/06/17/Android签名原理剖析/" title="Android签名剖析">http://zzqhost.com/2017/06/17/Android签名原理剖析/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://zzqhost.com/2017/06/17/Android签名原理剖析/　　作者: 张志强" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target="_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2017/06/18/Android打渠道包方案总结/">
+                    Android打渠道包方案总结
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/06/13/productFlavors的高级用法/">
+                    productFlavors的高级用法
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#概念介绍"><span class="toc-number">1.</span> <span class="toc-text">概念介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#消息摘要-Message-Digest"><span class="toc-number">1.1.</span> <span class="toc-text">消息摘要 -Message Digest</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MD5-SHA-0-SHA-1-SHA-256"><span class="toc-number">1.2.</span> <span class="toc-text">MD5, SHA-0, SHA-1, SHA-256</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#数字签名-Signature"><span class="toc-number">1.3.</span> <span class="toc-text">数字签名 - Signature</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#数字证书-Certificate"><span class="toc-number">1.4.</span> <span class="toc-text">数字证书 - Certificate</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Apk老的签名方法"><span class="toc-number">2.</span> <span class="toc-text">Apk老的签名方法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#签名三兄弟"><span class="toc-number">2.1.</span> <span class="toc-text">签名三兄弟</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#签名工具"><span class="toc-number">2.2.</span> <span class="toc-text">签名工具</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#签名过程"><span class="toc-number">2.3.</span> <span class="toc-text">签名过程</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#APK-Signature-Scheme-v2"><span class="toc-number">3.</span> <span class="toc-text">APK Signature Scheme v2</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#原因"><span class="toc-number">3.1.</span> <span class="toc-text">原因</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#V2带来了什么变化？"><span class="toc-number">3.2.</span> <span class="toc-text">V2带来了什么变化？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#应对变化"><span class="toc-number">3.3.</span> <span class="toc-text">应对变化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#新的签名方案就是一种扩展的zip格式"><span class="toc-number">3.4.</span> <span class="toc-text">新的签名方案就是一种扩展的zip格式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#可扩展的APK-Signature-Scheme-v2-Block"><span class="toc-number">3.5.</span> <span class="toc-text">可扩展的APK Signature Scheme v2 Block</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#新的签名工具-apksigner"><span class="toc-number">3.6.</span> <span class="toc-text">新的签名工具-apksigner</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#ZipAlign"><span class="toc-number">3.6.1.</span> <span class="toc-text">ZipAlign</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#apksigner"><span class="toc-number">3.6.2.</span> <span class="toc-text">apksigner</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#总结：两步完成对apk包的v2签名"><span class="toc-number">3.6.3.</span> <span class="toc-text">总结：两步完成对apk包的v2签名</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#总结"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#参考文献"><span class="toc-number">5.</span> <span class="toc-text">参考文献</span></a></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录" title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Android签名剖析　| 张志强的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <section class="youyan" id="comments">
+    <script>
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = 'http://v2.uyan.cc/code/uyan.js?uid=2123716';
+            (d.head || d.body).appendChild(s);
+        }
+    </script>
+    
+    <script> loadComment(); </script>
+
+    <div id="uyan_frame"></div>
+</section>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2017/06/18/Android打渠道包方案总结/" title="上一篇: Android打渠道包方案总结">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/06/13/productFlavors的高级用法/" title="下一篇: productFlavors的高级用法">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/03/10/Android中JSBridge的原理与实现/">Android中JSBridge的原理与实现</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/02/24/感冒的分类及治疗/">感冒的分类及治疗</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/03/学习nodejs第一天/">学习nodejs第一天</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/27/初入路由器刷机/">初入路由器刷机</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/08/14/ClassLoader详解/">ClassLoader详解</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/07/Android快速加载Dex/">Android快速加载Dex</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/05/字符编码/">字符编码</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/24/Retrofit2学习笔记/">Retrofit2学习笔记</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/18/Android打渠道包方案总结/">Android打渠道包方案总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/17/Android签名原理剖析/">Android签名剖析</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/13/productFlavors的高级用法/">productFlavors的高级用法</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客5/">使用hexo搭建静态博客(五)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客4/">使用hexo搭建静态博客(四)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客3/">使用hexo搭建静态博客(三)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客2/">使用hexo搭建静态博客(二)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客1/">使用hexo搭建静态博客(一)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/04/20/在Tomcat中部署web项目/">在Tomcat中部署web项目</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/11/通过hexo搭建个人博客/">通过hexo搭建个人博客</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/03/理解RESTful架构/">理解RESTful架构</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2017-2019 张志强
+            </div>
+            <div class="footer-right">
+                <!--<a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>-->
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+                Hosted by <a href="https://pages.coding.me" target="_blank" style="font-weight: bold">Coding Pages</a>
+                and Github
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style="display:none">
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style="display:none">
+                        <span id="page-visit" title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

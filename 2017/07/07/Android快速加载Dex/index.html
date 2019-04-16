@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<meta name="author" content="张志强">
+
+
+
+<meta name="description" content="DexFile类的LoadDex方法可以动态加载Dex文件，但是，这个类有一个缺陷，就是第一次启动并加载一个dex文件时，（尤其在ART模式）需要花费很长的时间。因为它会执行一次dexopt（art以下）或dex2oat（art及以上）操作。正常情况下不会感觉到它的不足，但是当你在App中使用插件化框架的时候，这个缺点会放大。本篇总结了几个解决此问题的方法">
+<meta name="keywords" content="Android,快速加载dex， TurboDex,解释执行">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android快速加载Dex">
+<meta property="og:url" content="http://zzqhost.com/2017/07/07/Android快速加载Dex/index.html">
+<meta property="og:site_name" content="张志强的博客">
+<meta property="og:description" content="DexFile类的LoadDex方法可以动态加载Dex文件，但是，这个类有一个缺陷，就是第一次启动并加载一个dex文件时，（尤其在ART模式）需要花费很长的时间。因为它会执行一次dexopt（art以下）或dex2oat（art及以上）操作。正常情况下不会感觉到它的不足，但是当你在App中使用插件化框架的时候，这个缺点会放大。本篇总结了几个解决此问题的方法">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-04-16T08:01:13.732Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Android快速加载Dex">
+<meta name="twitter:description" content="DexFile类的LoadDex方法可以动态加载Dex文件，但是，这个类有一个缺陷，就是第一次启动并加载一个dex文件时，（尤其在ART模式）需要花费很长的时间。因为它会执行一次dexopt（art以下）或dex2oat（art及以上）操作。正常情况下不会感觉到它的不足，但是当你在App中使用插件化框架的时候，这个缺点会放大。本篇总结了几个解决此问题的方法">
+
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>Android快速加载Dex | 张志强的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: false,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: true
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?0cbe0839852542956fe17f62ec5746ce";
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+
+
+</head></html>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/1_zzqhost.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">张志强</a></h1>
+        </hgroup>
+
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="false">
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class="no-result">No results found <i class="fa fa-spinner fa-pulse"></i></p>
+        
+
+
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">0</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">1</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">2</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">3</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">4</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">5</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/d">6</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">7</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">8</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">9</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">10</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">11</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">12</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">13</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">14</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">15</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">16</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">17</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">18</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/l">19</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">20</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">21</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">22</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">23</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">24</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/d">25</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">26</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">27</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">28</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/e">29</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">30</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">31</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">32</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">33</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">34</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">35</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">36</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">37</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">38</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/ ">39</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">40</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">41</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">42</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">43</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/1">44</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/6">45</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/3">46</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">47</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">48</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">49</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">50</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">51</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">52</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">53</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">54</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">55</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">56</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">57</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">58</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">59</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">60</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">61</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">62</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">63</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">64</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">65</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/l">66</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">67</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">68</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">69</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/1">70</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/6">71</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/3">72</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">73</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">74</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">75</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/m">76</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">77</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/ ">78</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">79</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">80</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">81</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">82</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">83</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">84</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">85</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">86</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/u">87</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">88</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">89</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">90</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">91</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">92</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">93</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">94</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">95</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">96</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">97</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">98</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">99</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">100</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">101</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">102</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">103</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">104</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">105</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">106</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">107</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">108</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">109</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">110</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/u">111</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">112</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">113</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">114</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">115</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">116</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">117</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">118</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">119</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">120</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/w">121</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">122</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/k">123</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">124</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">125</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">张志强</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/1_zzqhost.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">张志强</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我">
+</nav>
+      <div class="body-wrap"><article id="post-Android快速加载Dex" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/07/07/Android快速加载Dex/" class="article-date">
+      <time datetime="2017-07-07T06:57:18.000Z" itemprop="datePublished">2017-07-07</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Android快速加载Dex
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/Android/">Android</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/快速加载dex，-TurboDex/">快速加载dex， TurboDex</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/解释执行/">解释执行</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>DexFile类的LoadDex方法可以动态加载Dex文件，但是，这个类有一个缺陷，就是第一次启动并加载一个dex文件时，（尤其在ART模式）需要花费很长的时间。因为它会执行一次dexopt（art以下）或dex2oat（art及以上）操作。<br>正常情况下不会感觉到它的不足，但是当你在App中使用插件化框架的时候，这个缺点会放大。<br>本篇总结了几个解决此问题的方法<br><a id="more"></a></p>
+<h1 id="目前的一些解决方案"><a href="#目前的一些解决方案" class="headerlink" title="目前的一些解决方案"></a>目前的一些解决方案</h1><h2 id="TurboDex"><a href="#TurboDex" class="headerlink" title="TurboDex"></a>TurboDex</h2><p>早在2016年的GMTC会议时，Lody就已经在做TurboDex了，当时没有细聊，只知道Lody做了并开源了一个这样的东西，可以瞬间加载Dex文件。 今天有空研究了一下，现总结说明一下其原理</p>
+<h3 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h3><blockquote>
+<p>众所周知,Android中在Runtime加载一个 未优化的Dex文件 (尤其在 ART 模式)需要花费 很长的时间. 当你在App中使用 插件化框架 的时候, 首次加载插件就需要耗费很长的时间.</p>
+</blockquote>
+<blockquote>
+<p>TurboDex 就是为了解决这一问题而生, 就像是给AndroidVM开启了上帝模式, 在引入TurboDex后, 无论你加载了多大的Dex文件,都可以在毫秒级别内完成.</p>
+</blockquote>
+<h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><ul>
+<li><p>请参考以下的源码</p>
+<pre><code>#define HOOK(func) Cydia::elfHookFunction(&quot;libc.so&quot;, #func, (void*) my_##func, (void**) &amp;org_##func)
+
+static bool hooked = false;
+static bool enable = false;
+
+int (*org_execv)(const char *name, char **argv);
+
+int my_execv(const char *name, char **argv) {
+        #ifdef DEBUG
+        LOGD(&quot;#execv %s.&quot;, name);
+        #endif
+
+        if(enable &amp;&amp; strcmp(name, DEX2OAT_BIN) == 0) {
+            exit(0);
+        }
+
+          return org_execv(name, argv);
+}
+
+void enableFastLoadDex() {
+    if(!hooked) {
+        HOOK(execv);
+        hooked = true;
+    }
+    enable = true;
+}
+</code></pre></li>
+<li><strong>它的实现原理就是Hook了libc.so中的execv函数，在其执行时，检查是否是要调用dex2oat，如果是的话，直接退出</strong></li>
+<li>实现跟下边的<a href="分享一个快速加载dex文件的方法">看雪论坛</a>中的一篇文章写的是一样的</li>
+</ul>
+<h2 id="看雪论坛中的一篇文章"><a href="#看雪论坛中的一篇文章" class="headerlink" title="看雪论坛中的一篇文章"></a>看雪论坛中的一篇文章</h2><ul>
+<li>它的实现原理就是Hook了libc.so中的execv函数，在其执行时，检查是否是要调用dex2oat，如果是的话，直接退出</li>
+<li>具体参考<a href="分享一个快速加载dex文件的方法">《分享一个快速加载dex文件的方法》</a></li>
+</ul>
+<h2 id="Tinker"><a href="#Tinker" class="headerlink" title="Tinker"></a>Tinker</h2><h3 id="技术文章中的线索"><a href="#技术文章中的线索" class="headerlink" title="技术文章中的线索"></a>技术文章中的线索</h3><p>在Tinker分享的技术文章中有这样一段话</p>
+<blockquote>
+<p>九、厂商OTA后应用启动耗时问题</p>
+</blockquote>
+<blockquote>
+<p>在系统OTA后，旧的补丁的oat文件都已经过期。系统会在首次加载时，会重新执行dex2oat。这导致可能会在前台等待很长的时间，甚至出现ANR。这也是Vivo在某次会议上点名批评Tinker的最大原因。</p>
+</blockquote>
+<blockquote>
+<p>事实上，我们并非没有努力过。更早的时候，我们花费了1个多月的时间实现了分平台合成方案。即在Dalvik合成全量的Dex，在Art合成一个小的Dex。同一个输入，生成不同的并且合法的输出。这个的确不容易，我们也是踩过无数的坑，无数次尝试才实现。但是由于Art的内联问题，这个方案需要废弃。</p>
+</blockquote>
+<blockquote>
+<p>还有什么样的方案？这个时候，厂商给我们抛出橄榄枝，可以给微信做单独的优化：</p>
+</blockquote>
+<blockquote>
+<p>在系统升级时，帮助微信把Tinker目录的odex文件重新做dex2oat;<br>首次调用补丁dex2oat时，采用类似Oppo/Vivo的异步策略。<br>但是个人坚决反对这些特殊的优化，如果没有做定制的厂商怎么办？外部使用Tinker的应用怎么办？这不是一个非常良好的选择。如何解决：</p>
+</blockquote>
+<blockquote>
+<p>回退版本；检测到厂商OTA之后，我们立刻删除补丁，然后再在后台异步重新做dex2oat。这个方法非常简单，看起来也的确可以解决OTA的问题，但大范围的回退版本是否会造成更大的问题，尽管只是短暂的回退。假设我某次补丁修改了某些数据库的结构？所以这个方案是不能采用的。</p>
+</blockquote>
+<blockquote>
+<p>弹等待框；看起来厂商OTA的间隔不会非常频繁，如果使用等待框的方式用户也可以接受。这个我们采用的方案是当检测到系统OTA后，使用单独的进程去展示等待框。看起来好像没问题，但是这个有个非常大的问题，当主进程dex2oat超过60S的时候，一样会由于bg anr被系统杀死。这个方案在Commit中提交，很快被删除了。但是这套代码其实可以应用在Dalvik的多dex加载，大家可以参考一下。</p>
+</blockquote>
+<blockquote>
+<p><strong>解释执行</strong>；受Oppo/Vivo异步执行dex2oat启发，我们是否可以在OTA的首次先使用解释模式执行odex文件，在后台再做异步的dex2oat?事实上，这也是我们最终采用的方案。但是这里要注意的细节其实非常多，如果判断解释执行成功，解释执行的命令参数如何拼写，instruction set如何获取？大家可以参考这个Commit.</p>
+</blockquote>
+<h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><ul>
+<li><strong>源码文件</strong> tinker-android/tinker-android-loader/src/main/java/com/tencent/tinker/loader/TinkerParallelDexOptimizer.java</li>
+<li>在这里有一个解释执行的判断<pre><code>if (useInterpretMode) {
+    interpretDex2Oat(dexFile.getAbsolutePath(), optimizedPath);
+} else {
+    DexFile.loadDex(dexFile.getAbsolutePath(), optimizedPath, 0);
+}
+</code></pre></li>
+<li><p>interpretDex2Oat函数的实现如下</p>
+<pre><code>private void interpretDex2Oat(String dexFilePath, String oatFilePath) throws IOException {
+
+    final File oatFile = new File(oatFilePath);
+    if (!oatFile.exists()) {
+        oatFile.getParentFile().mkdirs();
+    }
+
+    final List&lt;String&gt; commandAndParams = new ArrayList&lt;&gt;();
+    commandAndParams.add(&quot;dex2oat&quot;);
+    commandAndParams.add(&quot;--dex-file=&quot; + dexFilePath);
+    commandAndParams.add(&quot;--oat-file=&quot; + oatFilePath);
+    commandAndParams.add(&quot;--instruction-set=&quot; + targetISA);
+    commandAndParams.add(&quot;--compiler-filter=interpret-only&quot;);
+
+    final ProcessBuilder pb = new ProcessBuilder(commandAndParams);
+    pb.redirectErrorStream(true);
+    final Process dex2oatProcess = pb.start();
+    StreamConsumer.consumeInputStream(dex2oatProcess.getInputStream());
+    StreamConsumer.consumeInputStream(dex2oatProcess.getErrorStream());
+    try {
+        final int ret = dex2oatProcess.waitFor();
+        if (ret != 0) {
+            throw new IOException(&quot;dex2oat works unsuccessfully, exit code: &quot; + ret);
+        }
+    } catch (InterruptedException e) {
+        throw new IOException(&quot;dex2oat is interrupted, msg: &quot; + e.getMessage(), e);
+    }
+}
+</code></pre></li>
+<li>源码分析<ul>
+<li>tinker的源码中是通过调用系统中的命令<strong>dex2oat</strong>并通过传递特定的参数来达到解释执行的目的</li>
+<li>关键参数： –compiler-filter=interpret-only</li>
+<li>–compiler-filter官方解释<pre><code>--compiler-filter=(verify-none|interpret-only|space|balanced|speed|everything|time):
+    select compiler filter.
+    Example: --compiler-filter=everything
+    Default: speed
+</code></pre></li>
+<li><a href="http://blog.csdn.net/roland_sun/article/details/50234551" target="_blank" rel="noopener">参数总结</a></li>
+</ul>
+</li>
+</ul>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><table>
+<thead>
+<tr>
+<th>方案</th>
+<th>原理</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TurboDex</td>
+<td>调用DexFile.LoadDex然后Hook libc.so</td>
+<td>简单暴力，适用于不改动原代码的情况下</td>
+</tr>
+<tr>
+<td>Tinker</td>
+<td>直接调用dex2oat命令</td>
+<td>适用于自己全面掌控代码的情况下</td>
+</tr>
+</tbody>
+</table>
+<h1 id="另一个问题"><a href="#另一个问题" class="headerlink" title="另一个问题"></a>另一个问题</h1><p>DexFile类中的方法loadDex已经在api level 26中被废弃了，如下</p>
+<blockquote>
+<p>loadDex(String sourcePathName, String outputPathName, int flags)</p>
+</blockquote>
+<blockquote>
+<p>This method was <strong>deprecated</strong> in API level O. Applications should use one of the standard classloaders such as PathClassLoader instead. This API will be removed in a future Android release.</p>
+</blockquote>
+<p>看来使用dex2oat这个方案还靠谱些；而且有必要再研究一下其它的方案</p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><a href="https://github.com/asLody/TurboDex/blob/master/CHINESE.md" target="_blank" rel="noopener">TurboDex: 在Android瞬间加载Dex</a></li>
+<li><a href="http://note.youdao.com/share/?id=28e62692d218a1f1faef98e4e7724f22&amp;type=note#/" target="_blank" rel="noopener">TurboDex瞬间实现加载Dex的分析</a></li>
+<li><a href="http://bbs.pediy.com/thread-205577.htm" target="_blank" rel="noopener">分享一个快速加载dex文件的方法</a></li>
+<li><a href="https://mp.weixin.qq.com/s/tlDy6kx8qVHQOZjNpG514w" target="_blank" rel="noopener">Tinker：技术的初心与坚持</a></li>
+<li><a href="http://blog.csdn.net/roland_sun/article/details/50234551" target="_blank" rel="noopener">dex2oat程序参数总结</a></li>
+<li><a href="https://developer.android.com/reference/dalvik/system/DexFile.html" target="_blank" rel="noopener">AndroidDeveloper</a></li>
+</ul>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2017/07/07/Android快速加载Dex/">Android快速加载Dex</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">张志强</a></p>
+        <p><span>发布时间:</span>2017-07-07, 14:57:18</p>
+        <p><span>最后更新:</span>2019-04-16, 16:01:13</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2017/07/07/Android快速加载Dex/" title="Android快速加载Dex">http://zzqhost.com/2017/07/07/Android快速加载Dex/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://zzqhost.com/2017/07/07/Android快速加载Dex/　　作者: 张志强" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target="_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2017/08/14/ClassLoader详解/">
+                    ClassLoader详解
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/07/05/字符编码/">
+                    字符编码
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#目前的一些解决方案"><span class="toc-number">1.</span> <span class="toc-text">目前的一些解决方案</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#TurboDex"><span class="toc-number">1.1.</span> <span class="toc-text">TurboDex</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#介绍"><span class="toc-number">1.1.1.</span> <span class="toc-text">介绍</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#原理"><span class="toc-number">1.1.2.</span> <span class="toc-text">原理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#看雪论坛中的一篇文章"><span class="toc-number">1.2.</span> <span class="toc-text">看雪论坛中的一篇文章</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Tinker"><span class="toc-number">1.3.</span> <span class="toc-text">Tinker</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#技术文章中的线索"><span class="toc-number">1.3.1.</span> <span class="toc-text">技术文章中的线索</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#源码分析"><span class="toc-number">1.4.</span> <span class="toc-text">源码分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#总结"><span class="toc-number">2.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#另一个问题"><span class="toc-number">3.</span> <span class="toc-text">另一个问题</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#参考"><span class="toc-number">4.</span> <span class="toc-text">参考</span></a></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录" title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Android快速加载Dex　| 张志强的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <section class="youyan" id="comments">
+    <script>
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = 'http://v2.uyan.cc/code/uyan.js?uid=2123716';
+            (d.head || d.body).appendChild(s);
+        }
+    </script>
+    
+    <script> loadComment(); </script>
+
+    <div id="uyan_frame"></div>
+</section>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2017/08/14/ClassLoader详解/" title="上一篇: ClassLoader详解">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/07/05/字符编码/" title="下一篇: 字符编码">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/03/10/Android中JSBridge的原理与实现/">Android中JSBridge的原理与实现</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/02/24/感冒的分类及治疗/">感冒的分类及治疗</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/03/学习nodejs第一天/">学习nodejs第一天</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/27/初入路由器刷机/">初入路由器刷机</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/08/14/ClassLoader详解/">ClassLoader详解</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/07/Android快速加载Dex/">Android快速加载Dex</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/05/字符编码/">字符编码</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/24/Retrofit2学习笔记/">Retrofit2学习笔记</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/18/Android打渠道包方案总结/">Android打渠道包方案总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/17/Android签名原理剖析/">Android签名剖析</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/13/productFlavors的高级用法/">productFlavors的高级用法</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客5/">使用hexo搭建静态博客(五)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客4/">使用hexo搭建静态博客(四)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客3/">使用hexo搭建静态博客(三)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客2/">使用hexo搭建静态博客(二)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客1/">使用hexo搭建静态博客(一)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/04/20/在Tomcat中部署web项目/">在Tomcat中部署web项目</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/11/通过hexo搭建个人博客/">通过hexo搭建个人博客</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/03/理解RESTful架构/">理解RESTful架构</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2017-2019 张志强
+            </div>
+            <div class="footer-right">
+                <!--<a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>-->
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+                Hosted by <a href="https://pages.coding.me" target="_blank" style="font-weight: bold">Coding Pages</a>
+                and Github
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style="display:none">
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style="display:none">
+                        <span id="page-visit" title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

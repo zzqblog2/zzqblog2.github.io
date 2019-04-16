@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<meta name="author" content="张志强">
+
+
+
+<meta name="description" content="首先我们来了解一下什么是JSBridge和为什么要使用JSBridge？ 在开发中，为了追求开发的效率以及移植的便利性，一些展示性强的页面我们会偏向于使用h5来完成，功能性强的页面我们会偏向于使用native来完成，而一旦使用了h5，为了在h5中尽可能的得到native的体验，我们native层需要暴露一些方法给js调用，比如，弹Toast提醒，弹Dialog，分享等等，有时候甚至把h5的网络请求">
+<meta name="keywords" content="Android,JSBridge">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android中JSBridge的原理与实现">
+<meta property="og:url" content="http://zzqhost.com/2018/03/10/Android中JSBridge的原理与实现/index.html">
+<meta property="og:site_name" content="张志强的博客">
+<meta property="og:description" content="首先我们来了解一下什么是JSBridge和为什么要使用JSBridge？ 在开发中，为了追求开发的效率以及移植的便利性，一些展示性强的页面我们会偏向于使用h5来完成，功能性强的页面我们会偏向于使用native来完成，而一旦使用了h5，为了在h5中尽可能的得到native的体验，我们native层需要暴露一些方法给js调用，比如，弹Toast提醒，弹Dialog，分享等等，有时候甚至把h5的网络请求">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-04-16T08:01:13.732Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Android中JSBridge的原理与实现">
+<meta name="twitter:description" content="首先我们来了解一下什么是JSBridge和为什么要使用JSBridge？ 在开发中，为了追求开发的效率以及移植的便利性，一些展示性强的页面我们会偏向于使用h5来完成，功能性强的页面我们会偏向于使用native来完成，而一旦使用了h5，为了在h5中尽可能的得到native的体验，我们native层需要暴露一些方法给js调用，比如，弹Toast提醒，弹Dialog，分享等等，有时候甚至把h5的网络请求">
+
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>Android中JSBridge的原理与实现 | 张志强的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: false,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: true
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?0cbe0839852542956fe17f62ec5746ce";
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+
+
+</head></html>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/1_zzqhost.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">张志强</a></h1>
+        </hgroup>
+
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="false">
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class="no-result">No results found <i class="fa fa-spinner fa-pulse"></i></p>
+        
+
+
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">0</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">1</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">2</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">3</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">4</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">5</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/d">6</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">7</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">8</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">9</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">10</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">11</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">12</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">13</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">14</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">15</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">16</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">17</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">18</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/l">19</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">20</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">21</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">22</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">23</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">24</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/d">25</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">26</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">27</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">28</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/e">29</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">30</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">31</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">32</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">33</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">34</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">35</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">36</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">37</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">38</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/ ">39</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">40</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">41</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">42</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">43</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/1">44</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/6">45</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/3">46</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">47</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">48</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">49</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">50</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">51</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">52</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">53</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">54</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">55</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">56</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">57</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">58</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">59</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">60</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">61</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">62</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">63</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">64</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">65</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/l">66</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">67</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">68</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">69</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/1">70</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/6">71</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/3">72</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">73</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">74</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">75</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/m">76</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">77</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/ ">78</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">79</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">80</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">81</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">82</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">83</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">84</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">85</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">86</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/u">87</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">88</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">89</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">90</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">91</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">92</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">93</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">94</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">95</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">96</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">97</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">98</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">99</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">100</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">101</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">102</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">103</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">104</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">105</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">106</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">107</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">108</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">109</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">110</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/u">111</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">112</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">113</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">114</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">115</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">116</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">117</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">118</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">119</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">120</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/w">121</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">122</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/k">123</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">124</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">125</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">张志强</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/1_zzqhost.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">张志强</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我">
+</nav>
+      <div class="body-wrap"><article id="post-Android中JSBridge的原理与实现" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2018/03/10/Android中JSBridge的原理与实现/" class="article-date">
+      <time datetime="2018-03-10T03:56:53.000Z" itemprop="datePublished">2018-03-10</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Android中JSBridge的原理与实现
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/Android/">Android</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JSBridge/">JSBridge</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>首先我们来了解一下什么是JSBridge和为什么要使用JSBridge？</p>
+<p>在开发中，为了追求开发的效率以及移植的便利性，一些展示性强的页面我们会偏向于使用h5来完成，功能性强的页面我们会偏向于使用native来完成，而一旦使用了h5，为了在h5中尽可能的得到native的体验，我们native层需要暴露一些方法给js调用，比如，弹Toast提醒，弹Dialog，分享等等，有时候甚至把h5的网络请求放到native去完成。</p>
+<p>JSBridge做得好的一个典型就是微信，微信给开发者提供了JSSDK，该SDK中暴露了很多微信native层的方法，比如支付，定位等。</p>
+<p>本文将对js和Native的通信原理和实现方法的一些探讨。<br><a id="more"></a></p>
+<h2 id="实现JSBridge关键点的原理剖析"><a href="#实现JSBridge关键点的原理剖析" class="headerlink" title="实现JSBridge关键点的原理剖析"></a>实现JSBridge关键点的原理剖析</h2><p>Android中的JSBridge是H5与Native通信的桥梁，其作用是实现H5与Native间的双向通信。要实现H5与Native的双向通信，解决如下四个问题即可：</p>
+<ol>
+<li>Java如何调用JavaScript</li>
+<li>JavaScript如何调用Java</li>
+<li>方法参数以及回调如何处理</li>
+<li>通信协议的制定</li>
+</ol>
+<p>下面从以上问题依次开始讨论</p>
+<h3 id="Java如何调用JavaScript"><a href="#Java如何调用JavaScript" class="headerlink" title="Java如何调用JavaScript"></a>Java如何调用JavaScript</h3><p>在WebView中，如果java要调用js的方法，是非常容易做到的，使用WebView.loadUrl(“javascript:function()”)即可，这样，就做到了JSBridge的native层调用h5层的单向通信<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WebView.loadUrl(<span class="string">"javascript:function()"</span>);</span><br></pre></td></tr></table></figure></p>
+<h3 id="JavaScript如何调用Java"><a href="#JavaScript如何调用Java" class="headerlink" title="JavaScript如何调用Java"></a>JavaScript如何调用Java</h3><p>js调用Android的方法有以下四种：</p>
+<ol>
+<li>WebView 的 JavascriptInterface</li>
+<li>WebViewClient.shouldOverrideUrlLoading()</li>
+<li>WebChromeClient.onConsoleMessage()</li>
+<li>WebChromeClient.onJsPrompt()、onJsAlert()、onJsConfirm()<br>我们先对此四种方案进行一个详细的描述，最后选择一个方案即可。本文章中采用了第四种方案。</li>
+</ol>
+<h4 id="JavascriptInterface"><a href="#JavascriptInterface" class="headerlink" title="JavascriptInterface"></a>JavascriptInterface</h4><p>JavascriptInterface是Android官方提供的js和Native通信方案。其实现如下：</p>
+<ol>
+<li><p>实现一个java类，供js调用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyJavascriptInterface</span> </span>&#123;</span><br><span class="line">    <span class="meta">@JavascriptInterface</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">showToast</span><span class="params">(String toast)</span> </span>&#123;             </span><br><span class="line">       Toast.makeText(MainActivity.<span class="keyword">this</span>, toast, Toast.LENGTH_SHORT).show();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在webView中注册这个类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">webView.addJavascriptInterface(<span class="keyword">new</span> MyJavascriptInterface(), <span class="string">"javascriptInterface"</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在js中直接调用这个接口：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">showToast</span>(<span class="params">text</span>)</span>&#123;</span><br><span class="line">    <span class="built_in">window</span>.javascriptInterface.showToast(text);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>总结<br>大多数人都知道WebView存在一个漏洞，见<a href="http://blog.csdn.net/jackrex/article/details/11110675" target="_blank" rel="noopener">WebView中接口隐患与手机挂马利用</a>，虽然该漏洞已经在Android 4.2上修复了（即使用@JavascriptInterface代替addJavascriptInterface），但是由于兼容性和安全性问题，基本上我们不会再利用Android系统为我们提供的addJavascriptInterface方法或者@JavascriptInterface注解来实现，所以我们只能另辟蹊径，去寻找既安全，又能实现兼容Android各个版本的方案。</p>
+</li>
+</ol>
+<h4 id="WebViewClient-shouldOverrideUrlLoading"><a href="#WebViewClient-shouldOverrideUrlLoading" class="headerlink" title="WebViewClient.shouldOverrideUrlLoading()"></a>WebViewClient.shouldOverrideUrlLoading()</h4><p>这个方法是拦截所有webView的跳转，页面可以构造一个特殊格式的Url跳转，shouldOverrideUrlLoading拦截Url后判断其格式，然后Native就能执行自身的逻辑了。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CustomWebViewClient</span> <span class="keyword">extends</span> <span class="title">WebViewClient</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">shouldOverrideUrlLoading</span><span class="params">(WebView view, String url)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">if</span> (isJsBridgeUrl(url)) &#123;</span><br><span class="line">        <span class="comment">// JSbridge的处理逻辑</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">super</span>.shouldOverrideUrlLoading(view, url);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h4 id="WebChromeClient-onConsoleMessage"><a href="#WebChromeClient-onConsoleMessage" class="headerlink" title="WebChromeClient.onConsoleMessage()"></a>WebChromeClient.onConsoleMessage()</h4><p>在js中执行console.log(), 会进入Android的WebChromeClient.consoleMessage()回调。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CustomWebChromeClient</span> <span class="keyword">extends</span> <span class="title">WebChromeClient</span> </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">onConsoleMessage</span><span class="params">(ConsoleMessage consoleMessage)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>.onConsoleMessage(consoleMessage);</span><br><span class="line">    String msg = consoleMessage.message();<span class="comment">//Javascript输入的Log内容</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h4 id="WebChromeClient-onJsPrompt"><a href="#WebChromeClient-onJsPrompt" class="headerlink" title="WebChromeClient.onJsPrompt()"></a>WebChromeClient.onJsPrompt()</h4><ol>
+<li>在WebView有一个方法，叫setWebChromeClient，可以设置WebChromeClient对象，而这个对象中有三个方法，分别是onJsAlert,onJsConfirm,onJsPrompt，当js调用window对象的对应的方法，即window.alert，window.confirm，window.prompt，WebChromeClient对象中的三个方法对应的就会被触发，那这三个方法到底要使用哪个呢？</li>
+<li>这三个方法的区别，可以详见w3c <a href="http://www.w3school.com.cn/js/js_popup.asp" target="_blank" rel="noopener">JavaScript 消息框</a> 。</li>
+<li>一般来说，我们是不会使用onJsAlert的，为什么呢？因为js中alert使用的频率还是非常高的，一旦我们占用了这个通道，alert的正常使用就会受到影响，而confirm和prompt的使用频率相对alert来说，则更低一点。</li>
+<li>那么到底是选择confirm还是prompt呢，其实confirm的使用频率也是不低的，比如你点一个链接下载一个文件，这时候如果需要弹出一个提示进行确认，点击确认就会下载，点取消便不会下载，类似这种场景还是很多的，因此不能占用confirm。</li>
+<li>而prompt则不一样，在Android中，几乎不会使用到这个方法，就是用，也会进行自定义，所以我们完全可以使用这个方法。该方法就是弹出一个输入框，然后让你输入，输入完成后返回输入框中的内容。因此，占用prompt是再完美不过了。<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CustomWebChromeClient</span> <span class="keyword">extends</span> <span class="title">WebChromeClient</span> </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">onJsPrompt</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>.onJsPrompt();</span><br><span class="line">    ...</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">myWebView.setWebChromClient(<span class="keyword">new</span> CustomWebChromeClient());</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="方法参数以及回调处理"><a href="#方法参数以及回调处理" class="headerlink" title="方法参数以及回调处理"></a>方法参数以及回调处理</h3><ol>
+<li>任何IPC通信都涉及到参数序列化的问题，同理，Java与JavaScript之间只能传递基础类型（包括基本类型和字符串），不包括其他对象或者函数。所以可以采用json格式来传递数据。</li>
+<li>为了实现异步返回结果，所以JavaScript与Java相互调用不能直接获取返回值，只能通过回调的方式来获取返回结果。</li>
+</ol>
+<h3 id="通信协议的制定"><a href="#通信协议的制定" class="headerlink" title="通信协议的制定"></a>通信协议的制定</h3><p>要进行正常的通信，通信协议的制定是必不可少的。我们回想一下熟悉的http请求url的组成部分。形如<a href="http://host:port/path?param=value" target="_blank" rel="noopener">http://host:port/path?param=value</a>, 我们参考http，制定JSBridge的组成部分<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">jsbridge://className:callbackAddress/methodName?jsonObj</span><br><span class="line"></span><br><span class="line">// className: 表示java的类名</span><br><span class="line">// callbackAddress： js回调的标识</span><br><span class="line">// methodName： java中的方法名</span><br><span class="line">// jsonObj： 接口数据</span><br></pre></td></tr></table></figure></p>
+<h2 id="具体实践"><a href="#具体实践" class="headerlink" title="具体实践"></a>具体实践</h2><h3 id="调用流程"><a href="#调用流程" class="headerlink" title="调用流程"></a>调用流程</h3><ol>
+<li><p>在js中，可以采用如下方法调用java方法</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> JSBridge = &#123;</span><br><span class="line">  call: <span class="function"><span class="keyword">function</span>(<span class="params">className, method, params, callback</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> uri = <span class="string">'jsbridge://'</span> + className + <span class="string">':'</span> + callback + <span class="string">'/'</span> + method + <span class="string">'?'</span> + params;</span><br><span class="line">    <span class="built_in">window</span>.prompt(uri, <span class="string">""</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 下面会调用java中的 bridge.showToast方法</span></span><br><span class="line">JSBridge.call(<span class="string">'bridge'</span>, <span class="string">'showToast'</span>, &#123;<span class="string">'msg'</span>:<span class="string">'Hello JSBridge'</span>&#125;, <span class="function"><span class="keyword">function</span>(<span class="params">res</span>) </span>&#123;</span><br><span class="line">          alert(<span class="built_in">JSON</span>.stringify(res))</span><br><span class="line">      &#125;);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在java中， 可以如下实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 进入prompt回调</span></span><br><span class="line">  <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JSBridgeWebChromeClient</span> <span class="keyword">extends</span> <span class="title">WebChromeClient</span> </span>&#123;      </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">onJsPrompt</span><span class="params">(WebView view, String url, String message, String defaultValue, JsPromptResult result)</span> </span>&#123;            </span><br><span class="line">      result.confirm(JSBridge.callJava(view, message));</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 调用java逻辑</span></span><br><span class="line">  <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JSBridge</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">callJava</span><span class="params">(WebView webView, String uriString)</span> </span>&#123;</span><br><span class="line">        String methodName = <span class="string">""</span>;</span><br><span class="line">        String className = <span class="string">""</span>;</span><br><span class="line">        String param = <span class="string">"&#123;&#125;"</span>;</span><br><span class="line">        String port = <span class="string">""</span>;</span><br><span class="line">        <span class="keyword">if</span> (!TextUtils.isEmpty(uriString) &amp;&amp; uriString.startsWith(<span class="string">"JSBridge"</span>)) &#123;</span><br><span class="line">            Uri uri = Uri.parse(uriString);</span><br><span class="line">            className = uri.getHost();</span><br><span class="line">            param = uri.getQuery();</span><br><span class="line">            port = uri.getPort() + <span class="string">""</span>;</span><br><span class="line">            String path = uri.getPath();</span><br><span class="line">            <span class="keyword">if</span> (!TextUtils.isEmpty(path)) &#123;</span><br><span class="line">                methodName = path.replace(<span class="string">"/"</span>, <span class="string">""</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 基于上面的className、methodName和port path调用对应类的方法</span></span><br><span class="line">        <span class="keyword">if</span> (exposedMethods.containsKey(className)) &#123;</span><br><span class="line">            HashMap&lt;String, Method&gt; methodHashMap = exposedMethods.get(className);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (methodHashMap != <span class="keyword">null</span> &amp;&amp; methodHashMap.size() != <span class="number">0</span> &amp;&amp; methodHashMap.containsKey(methodName)) &#123;</span><br><span class="line">                Method method = methodHashMap.get(methodName);</span><br><span class="line">                <span class="keyword">if</span> (method != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        method.invoke(<span class="keyword">null</span>, webView, <span class="keyword">new</span> JSONObject(param), <span class="keyword">new</span> Callback(webView, port));</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 直接进入showToast函数的实现</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">showToast</span><span class="params">(WebView webView, JSONObject param, <span class="keyword">final</span> Callback callback)</span> </span>&#123;</span><br><span class="line">    String message = param.optString(<span class="string">"msg"</span>);</span><br><span class="line">    Toast.makeText(webView.getContext(), message, Toast.LENGTH_SHORT).show();</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> != callback) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            JSONObject object = <span class="keyword">new</span> JSONObject();</span><br><span class="line">            object.put(<span class="string">"key"</span>, <span class="string">"value"</span>);</span><br><span class="line">            object.put(<span class="string">"key1"</span>, <span class="string">"value1"</span>);</span><br><span class="line">            callback.apply(getJSONObject(<span class="number">0</span>, <span class="string">"ok"</span>, object));</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">     &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 上述程序的callback.apply方法实现如下： 即通过webView.loadUrl实现java调用js的方法</span></span><br><span class="line">  <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Callback</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Handler mHandler = <span class="keyword">new</span> Handler(Looper.getMainLooper());</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String CALLBACK_JS_FORMAT = <span class="string">"javascript:JSBridge.onFinish('%s', %s);"</span>;</span><br><span class="line">    <span class="keyword">private</span> String mPort;</span><br><span class="line">    <span class="keyword">private</span> WeakReference&lt;WebView&gt; mWebViewRef;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Callback</span><span class="params">(WebView view, String port)</span> </span>&#123;</span><br><span class="line">        mWebViewRef = <span class="keyword">new</span> WeakReference&lt;&gt;(view);</span><br><span class="line">        mPort = port;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">apply</span><span class="params">(JSONObject jsonObject)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> String execJs = String.format(CALLBACK_JS_FORMAT, mPort, String.valueOf(jsonObject));</span><br><span class="line">        <span class="keyword">if</span> (mWebViewRef != <span class="keyword">null</span> &amp;&amp; mWebViewRef.get() != <span class="keyword">null</span>) &#123;</span><br><span class="line">            mHandler.post(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    mWebViewRef.get().loadUrl(execJs);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="安全性及其它"><a href="#安全性及其它" class="headerlink" title="安全性及其它"></a>安全性及其它</h3><ol>
+<li><p>JSBridge类管理暴露给前端方法，前端调用的方法应该在此类中注册才可使用。register的实现是从Map中查找key是否存在，不存在则反射取得对应class中的所有方法,具体方法是在BridgeImpl中定义的，方法包括三个参数分别为WebView、JSONObject、CallBack。如果满足条件，则将所有满足条件的方法put到map中。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> Map&lt;String, HashMap&lt;String, Method&gt;&gt; exposedMethods = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">register</span><span class="params">(String exposedName, Class&lt;? extends IBridge&gt; clazz)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!exposedMethods.containsKey(exposedName)) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                exposedMethods.put(exposedName, getAllMethod(clazz));</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>JSBridge类中的callJava方法就是将js传递过来的URL解析，根据将要调用的类名从刚刚建立的Map中找出，根据方法名调用具体的方法，并将解析出的三个参数传递进去。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">callJava</span><span class="params">(WebView webView, String uriString)</span> </span>&#123;</span><br><span class="line">        String methodName = <span class="string">""</span>;</span><br><span class="line">        String className = <span class="string">""</span>;</span><br><span class="line">        String param = <span class="string">"&#123;&#125;"</span>;</span><br><span class="line">        String port = <span class="string">""</span>;</span><br><span class="line">        <span class="keyword">if</span> (!TextUtils.isEmpty(uriString) &amp;&amp; uriString.startsWith(<span class="string">"JSBridge"</span>)) &#123;</span><br><span class="line">            Uri uri = Uri.parse(uriString);</span><br><span class="line">            className = uri.getHost();</span><br><span class="line">            param = uri.getQuery();</span><br><span class="line">            port = uri.getPort() + <span class="string">""</span>;</span><br><span class="line">            String path = uri.getPath();</span><br><span class="line">            <span class="keyword">if</span> (!TextUtils.isEmpty(path)) &#123;</span><br><span class="line">                methodName = path.replace(<span class="string">"/"</span>, <span class="string">""</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (exposedMethods.containsKey(className)) &#123;</span><br><span class="line">            HashMap&lt;String, Method&gt; methodHashMap = exposedMethods.get(className);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (methodHashMap != <span class="keyword">null</span> &amp;&amp; methodHashMap.size() != <span class="number">0</span> &amp;&amp; methodHashMap.containsKey(methodName)) &#123;</span><br><span class="line">                Method method = methodHashMap.get(methodName);</span><br><span class="line">                <span class="keyword">if</span> (method != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        method.invoke(<span class="keyword">null</span>, webView, <span class="keyword">new</span> JSONObject(param), <span class="keyword">new</span> Callback(webView, port));</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>CallBack类是用来回调js中回调方法的Java对应类。Java层处理好的返回结果是通过CallBack类来实现的。在这个回调类中传递的参数是JSONObject（返回结果）、WebView和port，port应与js传递过来的port相对应。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> Handler mHandler = <span class="keyword">new</span> Handler(Looper.getMainLooper());</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String CALLBACK_JS_FORMAT = <span class="string">"javascript:JSBridge.onFinish('%s', %s);"</span>;</span><br><span class="line">    <span class="keyword">private</span> String mPort;</span><br><span class="line">    <span class="keyword">private</span> WeakReference&lt;WebView&gt; mWebViewRef;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Callback</span><span class="params">(WebView view, String port)</span> </span>&#123;</span><br><span class="line">        mWebViewRef = <span class="keyword">new</span> WeakReference&lt;&gt;(view);</span><br><span class="line">        mPort = port;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">apply</span><span class="params">(JSONObject jsonObject)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> String execJs = String.format(CALLBACK_JS_FORMAT, mPort, String.valueOf(jsonObject));</span><br><span class="line">        <span class="keyword">if</span> (mWebViewRef != <span class="keyword">null</span> &amp;&amp; mWebViewRef.get() != <span class="keyword">null</span>) &#123;</span><br><span class="line">            mHandler.post(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    mWebViewRef.get().loadUrl(execJs);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在java层的JSBridge中注册方法，例如</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JSBridge.register(<span class="string">"bridge"</span>, BridgeImpl.class);</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><ul>
+<li><a href="http://blog.csdn.net/starsliu/article/details/50820453" target="_blank" rel="noopener">Android JSBridge的原理与实现</a></li>
+<li><a href="https://www.jianshu.com/p/2ec3f06d6087" target="_blank" rel="noopener">Android中JSBridge的原理与实现</a></li>
+<li><a href="https://www.jianshu.com/p/7ee7ab68c095" target="_blank" rel="noopener">Android JsBridge</a></li>
+</ul>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2018/03/10/Android中JSBridge的原理与实现/">Android中JSBridge的原理与实现</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">张志强</a></p>
+        <p><span>发布时间:</span>2018-03-10, 11:56:53</p>
+        <p><span>最后更新:</span>2019-04-16, 16:01:13</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2018/03/10/Android中JSBridge的原理与实现/" title="Android中JSBridge的原理与实现">http://zzqhost.com/2018/03/10/Android中JSBridge的原理与实现/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://zzqhost.com/2018/03/10/Android中JSBridge的原理与实现/　　作者: 张志强" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target="_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2018/02/24/感冒的分类及治疗/">
+                    感冒的分类及治疗
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#实现JSBridge关键点的原理剖析"><span class="toc-number">1.</span> <span class="toc-text">实现JSBridge关键点的原理剖析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Java如何调用JavaScript"><span class="toc-number">1.1.</span> <span class="toc-text">Java如何调用JavaScript</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#JavaScript如何调用Java"><span class="toc-number">1.2.</span> <span class="toc-text">JavaScript如何调用Java</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#JavascriptInterface"><span class="toc-number">1.2.1.</span> <span class="toc-text">JavascriptInterface</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#WebViewClient-shouldOverrideUrlLoading"><span class="toc-number">1.2.2.</span> <span class="toc-text">WebViewClient.shouldOverrideUrlLoading()</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#WebChromeClient-onConsoleMessage"><span class="toc-number">1.2.3.</span> <span class="toc-text">WebChromeClient.onConsoleMessage()</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#WebChromeClient-onJsPrompt"><span class="toc-number">1.2.4.</span> <span class="toc-text">WebChromeClient.onJsPrompt()</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#方法参数以及回调处理"><span class="toc-number">1.3.</span> <span class="toc-text">方法参数以及回调处理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#通信协议的制定"><span class="toc-number">1.4.</span> <span class="toc-text">通信协议的制定</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#具体实践"><span class="toc-number">2.</span> <span class="toc-text">具体实践</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#调用流程"><span class="toc-number">2.1.</span> <span class="toc-text">调用流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安全性及其它"><span class="toc-number">2.2.</span> <span class="toc-text">安全性及其它</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考文献"><span class="toc-number">3.</span> <span class="toc-text">参考文献</span></a></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录" title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Android中JSBridge的原理与实现　| 张志强的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <section class="youyan" id="comments">
+    <script>
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = 'http://v2.uyan.cc/code/uyan.js?uid=2123716';
+            (d.head || d.body).appendChild(s);
+        }
+    </script>
+    
+    <script> loadComment(); </script>
+
+    <div id="uyan_frame"></div>
+</section>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2018/02/24/感冒的分类及治疗/" title="下一篇: 感冒的分类及治疗">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/03/10/Android中JSBridge的原理与实现/">Android中JSBridge的原理与实现</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/02/24/感冒的分类及治疗/">感冒的分类及治疗</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/03/学习nodejs第一天/">学习nodejs第一天</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/27/初入路由器刷机/">初入路由器刷机</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/08/14/ClassLoader详解/">ClassLoader详解</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/07/Android快速加载Dex/">Android快速加载Dex</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/05/字符编码/">字符编码</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/24/Retrofit2学习笔记/">Retrofit2学习笔记</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/18/Android打渠道包方案总结/">Android打渠道包方案总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/17/Android签名原理剖析/">Android签名剖析</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/13/productFlavors的高级用法/">productFlavors的高级用法</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客5/">使用hexo搭建静态博客(五)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客4/">使用hexo搭建静态博客(四)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客3/">使用hexo搭建静态博客(三)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客2/">使用hexo搭建静态博客(二)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客1/">使用hexo搭建静态博客(一)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/04/20/在Tomcat中部署web项目/">在Tomcat中部署web项目</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/11/通过hexo搭建个人博客/">通过hexo搭建个人博客</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/03/理解RESTful架构/">理解RESTful架构</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2017-2019 张志强
+            </div>
+            <div class="footer-right">
+                <!--<a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>-->
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+                Hosted by <a href="https://pages.coding.me" target="_blank" style="font-weight: bold">Coding Pages</a>
+                and Github
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style="display:none">
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style="display:none">
+                        <span id="page-visit" title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

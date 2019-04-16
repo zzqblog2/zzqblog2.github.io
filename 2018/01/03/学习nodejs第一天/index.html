@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<meta name="author" content="张志强">
+
+
+
+<meta name="description" content="买来新书＜了不起的Node.js＞, 初学之下心潮澎湃，忍不住手痒想写点东西．">
+<meta name="keywords" content="nodejs,npm">
+<meta property="og:type" content="article">
+<meta property="og:title" content="学习nodejs第一天">
+<meta property="og:url" content="http://zzqhost.com/2018/01/03/学习nodejs第一天/index.html">
+<meta property="og:site_name" content="张志强的博客">
+<meta property="og:description" content="买来新书＜了不起的Node.js＞, 初学之下心潮澎湃，忍不住手痒想写点东西．">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-04-16T08:01:13.732Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="学习nodejs第一天">
+<meta name="twitter:description" content="买来新书＜了不起的Node.js＞, 初学之下心潮澎湃，忍不住手痒想写点东西．">
+
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>学习nodejs第一天 | 张志强的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: false,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: true
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?0cbe0839852542956fe17f62ec5746ce";
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+
+
+</head></html>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/1_zzqhost.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">张志强</a></h1>
+        </hgroup>
+
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="false">
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class="no-result">No results found <i class="fa fa-spinner fa-pulse"></i></p>
+        
+
+
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">0</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">1</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">2</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">3</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">4</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">5</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/d">6</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">7</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">8</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">9</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">10</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">11</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">12</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">13</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">14</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">15</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">16</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">17</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">18</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/l">19</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">20</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">21</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">22</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">23</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">24</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/d">25</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">26</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">27</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">28</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/e">29</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">30</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">31</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">32</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">33</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">34</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">35</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">36</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">37</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">38</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/ ">39</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">40</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">41</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">42</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">43</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/1">44</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/6">45</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/3">46</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">47</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">48</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">49</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">50</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">51</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">52</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">53</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">54</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">55</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">56</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">57</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">58</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">59</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">60</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">61</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">62</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">63</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">64</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">65</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/l">66</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">67</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">68</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">69</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/1">70</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/6">71</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/3">72</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">73</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">74</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">75</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/m">76</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">77</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/ ">78</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">79</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">80</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">81</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">82</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">83</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">84</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">85</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">86</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/u">87</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">88</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">89</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">90</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">91</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">92</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">93</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">94</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">95</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">96</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">97</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">98</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">99</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">100</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">101</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">102</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">103</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">104</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">105</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">106</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">107</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">108</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">109</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">110</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/u">111</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">112</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">113</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">114</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">115</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">116</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">117</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">118</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">119</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">120</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/w">121</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">122</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/k">123</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">124</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">125</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">张志强</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/1_zzqhost.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">张志强</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我">
+</nav>
+      <div class="body-wrap"><article id="post-学习nodejs第一天" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2018/01/03/学习nodejs第一天/" class="article-date">
+      <time datetime="2018-01-02T23:41:01.000Z" itemprop="datePublished">2018-01-03</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      学习nodejs第一天
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/web开发/">web开发</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/nodejs/">nodejs</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/npm/">npm</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>买来新书＜了不起的Node.js＞, 初学之下心潮澎湃，忍不住手痒想写点东西．</p>
+<a id="more"></a>
+<h1 id="Node-js概略介绍"><a href="#Node-js概略介绍" class="headerlink" title="Node.js概略介绍"></a>Node.js概略介绍</h1><ul>
+<li>就前端来说nodejs具有划时代的意义，做前端的没用过nodejs都不好意思说自己是前端，做后端的没听过nodejs，或者说不出nodejs和java的优缺点，也不是一个合格的后端。</li>
+<li>nodejs不是一个js框架，千万不要认为是类似jquery的框架，</li>
+<li>nodejs是js运行时，运行环境，类比java中jvm。java的开端是什么，无疑是jvm，自从有了jvm，java才能吹牛说自己是“一次编写处处运行”，不管你是windows还是linux，只要安装了对应版本的jvm都可以运行.class文件。同样nodejs的作用和jvm的一样一样的，也是js的运行环境，不管你是什么操作系统，只要安装对应版本的nodejs，那你就可以用js来开发后台程序。</li>
+<li>这具有划时代的意义，意味着一直以来只能在浏览器上玩来玩去的js，可以做后端开发了，</li>
+<li>从有了nodejs后就催生出一大批用js做后台开发的前端人员，这部分人员就是偏前端的“全栈程序员”。</li>
+<li><strong>记住，nodejs是和jvm同等地位的js运行环境，打开了前端人员走向后端的道路。</strong></li>
+</ul>
+<h1 id="入门"><a href="#入门" class="headerlink" title="入门"></a>入门</h1><h2 id="安装nodejs"><a href="#安装nodejs" class="headerlink" title="安装nodejs"></a>安装nodejs</h2><p>Linux下有三种方法可以安装nodejs，可自行百度，或者参考<a href="http://www.xitongzhijia.net/xtjc/20150202/36680.html" target="_blank" rel="noopener">此处</a>,如下所列</p>
+<ul>
+<li>从官网下载编译好的文件，直接解压即可，跟安装jdk一样，此种方法安装完后就会有node和npm了</li>
+<li>下载源码编译安装</li>
+<li>apt-get</li>
+</ul>
+<p>上面就是Linux安装Nodejs的方法介绍了，三种方法都能够安装Nodejs，使用源码安装是最简单的方法，而后面两种较为麻烦，不是很推荐。</p>
+<h2 id="Node-REPL"><a href="#Node-REPL" class="headerlink" title="Node REPL"></a>Node REPL</h2><p>要运行Node的REPL, 在终端输入Node即可，可以在REPL中快速的尝试一些JavaScript的原生用法，很方便, 是一个很不错的工具．</p>
+<pre><code>$ node
+&gt; console.log(&quot;Hello World&quot;);
+</code></pre><h2 id="执行文件"><a href="#执行文件" class="headerlink" title="执行文件"></a>执行文件</h2><p>用你喜欢的编辑器，编辑一个js文件(例如，my-web-server.js，内容略，可参考后文)，然后通过以下命令来执行</p>
+<pre><code>node my-web-server.js
+</code></pre><h2 id="自定义模块"><a href="#自定义模块" class="headerlink" title="自定义模块"></a>自定义模块</h2><h3 id="步骤"><a href="#步骤" class="headerlink" title="步骤"></a>步骤</h3><ul>
+<li>创建一个空文件夹</li>
+<li>创建文件package.json, 并编辑它</li>
+<li>运行<pre><code>npm index   # 注意此处的index为您的js文件名, 并且不需要再添加.js后缀了,
+</code></pre></li>
+</ul>
+<h3 id="package-json简单介绍"><a href="#package-json简单介绍" class="headerlink" title="package.json简单介绍"></a>package.json简单介绍</h3><pre><code>{
+    &quot;name&quot;: &quot;my-colors-project&quot;,
+    &quot;version&quot;: &quot;0.0.1&quot;,
+    &quot;main&quot;: &quot;./index&quot;,
+    &quot;dependencies&quot;: {
+        &quot;colors&quot;: &quot;0.5.0&quot;
+    }
+}
+</code></pre><ul>
+<li>只有Name和Version是必要字段,其它都是可选字段</li>
+<li>当别人使用require(‘my-colors-project’)时, 为了能够让Node知道该载入哪个文件,可以通过 main 属性来指定</li>
+<li>如果不想发布你的模块中, 可以在package.json中加入 “private”:”true” 来进行禁止</li>
+<li>dependencies: 依赖</li>
+</ul>
+<h2 id="npm"><a href="#npm" class="headerlink" title="npm"></a>npm</h2><pre><code>npm install             # 安装此模块的Package.json中指明的依赖
+npm install colors      # 安装colors模块到当前目录中
+npm install -g express  # 安装express模块到全局中
+npm publish             # 把本自定义模块发布到NPM的库中供所有人下载使用
+npm help json           # 查看package.json文件中的所有属性
+npm search realtime     # 搜索
+npm view socket.io
+</code></pre><h2 id="一个例子-my-web-server-js"><a href="#一个例子-my-web-server-js" class="headerlink" title="一个例子(my-web-server.js)"></a>一个例子(my-web-server.js)</h2><pre><code>var http = require(&apos;http&apos;)
+var serv = http.createServer(function(req, res) {
+    res.writeHead(200, {&apos;content-Type&apos;: &apos;text/html&apos;});
+    res.end(&apos;&lt;marquee&gt;Smashing Node!&lt;/marquee&gt;&apos;);
+});
+serv.listen(3000);
+</code></pre><h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><ul>
+<li><a href="http://www.xitongzhijia.net/xtjc/20150202/36680.html" target="_blank" rel="noopener">Linux安装Nodejs的三大方法</a></li>
+<li><a href="http://blog.csdn.net/woxueliuyun/article/details/39294375" target="_blank" rel="noopener">package.json字段全解</a></li>
+</ul>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2018/01/03/学习nodejs第一天/">学习nodejs第一天</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">张志强</a></p>
+        <p><span>发布时间:</span>2018-01-03, 07:41:01</p>
+        <p><span>最后更新:</span>2019-04-16, 16:01:13</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2018/01/03/学习nodejs第一天/" title="学习nodejs第一天">http://zzqhost.com/2018/01/03/学习nodejs第一天/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://zzqhost.com/2018/01/03/学习nodejs第一天/　　作者: 张志强" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target="_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2018/02/24/感冒的分类及治疗/">
+                    感冒的分类及治疗
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/11/27/初入路由器刷机/">
+                    初入路由器刷机
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Node-js概略介绍"><span class="toc-number">1.</span> <span class="toc-text">Node.js概略介绍</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#入门"><span class="toc-number">2.</span> <span class="toc-text">入门</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#安装nodejs"><span class="toc-number">2.1.</span> <span class="toc-text">安装nodejs</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Node-REPL"><span class="toc-number">2.2.</span> <span class="toc-text">Node REPL</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#执行文件"><span class="toc-number">2.3.</span> <span class="toc-text">执行文件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#自定义模块"><span class="toc-number">2.4.</span> <span class="toc-text">自定义模块</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#步骤"><span class="toc-number">2.4.1.</span> <span class="toc-text">步骤</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#package-json简单介绍"><span class="toc-number">2.4.2.</span> <span class="toc-text">package.json简单介绍</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#npm"><span class="toc-number">2.5.</span> <span class="toc-text">npm</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#一个例子-my-web-server-js"><span class="toc-number">2.6.</span> <span class="toc-text">一个例子(my-web-server.js)</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#参考文献"><span class="toc-number">3.</span> <span class="toc-text">参考文献</span></a></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录" title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"学习nodejs第一天　| 张志强的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <section class="youyan" id="comments">
+    <script>
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = 'http://v2.uyan.cc/code/uyan.js?uid=2123716';
+            (d.head || d.body).appendChild(s);
+        }
+    </script>
+    
+    <script> loadComment(); </script>
+
+    <div id="uyan_frame"></div>
+</section>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2018/02/24/感冒的分类及治疗/" title="上一篇: 感冒的分类及治疗">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/11/27/初入路由器刷机/" title="下一篇: 初入路由器刷机">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/03/10/Android中JSBridge的原理与实现/">Android中JSBridge的原理与实现</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/02/24/感冒的分类及治疗/">感冒的分类及治疗</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/03/学习nodejs第一天/">学习nodejs第一天</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/27/初入路由器刷机/">初入路由器刷机</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/08/14/ClassLoader详解/">ClassLoader详解</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/07/Android快速加载Dex/">Android快速加载Dex</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/05/字符编码/">字符编码</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/24/Retrofit2学习笔记/">Retrofit2学习笔记</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/18/Android打渠道包方案总结/">Android打渠道包方案总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/17/Android签名原理剖析/">Android签名剖析</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/13/productFlavors的高级用法/">productFlavors的高级用法</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客5/">使用hexo搭建静态博客(五)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客4/">使用hexo搭建静态博客(四)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客3/">使用hexo搭建静态博客(三)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客2/">使用hexo搭建静态博客(二)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客1/">使用hexo搭建静态博客(一)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/04/20/在Tomcat中部署web项目/">在Tomcat中部署web项目</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/11/通过hexo搭建个人博客/">通过hexo搭建个人博客</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/03/理解RESTful架构/">理解RESTful架构</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2017-2019 张志强
+            </div>
+            <div class="footer-right">
+                <!--<a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>-->
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+                Hosted by <a href="https://pages.coding.me" target="_blank" style="font-weight: bold">Coding Pages</a>
+                and Github
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style="display:none">
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style="display:none">
+                        <span id="page-visit" title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

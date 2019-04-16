@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<meta name="author" content="张志强">
+
+
+
+<meta name="description" content="大家都知道，一个Java程序编译之后，是由若干个.class文件组织而成的一个完整的Java应用程序，当程序在运行时，即会调用该程序的一个入口函数来调用系统的相关功能，而这些功能都被封装在不同的class文件当中，所以经常要从这个class文件中要调用另外一个class文件中的方法，如果另外一个文件不存在的，则会引发系统异常。而程序在启动的时候，并不会一次性加载程序所要用的所有class文件，而是">
+<meta name="keywords" content="Android,ClassLoader,动态加载">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ClassLoader详解">
+<meta property="og:url" content="http://zzqhost.com/2017/08/14/ClassLoader详解/index.html">
+<meta property="og:site_name" content="张志强的博客">
+<meta property="og:description" content="大家都知道，一个Java程序编译之后，是由若干个.class文件组织而成的一个完整的Java应用程序，当程序在运行时，即会调用该程序的一个入口函数来调用系统的相关功能，而这些功能都被封装在不同的class文件当中，所以经常要从这个class文件中要调用另外一个class文件中的方法，如果另外一个文件不存在的，则会引发系统异常。而程序在启动的时候，并不会一次性加载程序所要用的所有class文件，而是">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3ClassLoader%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84.gif">
+<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-Android%E5%B9%B3%E5%8F%B0ClassLoader%E7%BB%A7%E6%89%BF%E6%A0%91.png">
+<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-BaseDexClassLoader%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png">
+<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-DexClassLoader%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0.png">
+<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-PathClassLoader%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png">
+<meta property="og:updated_time" content="2019-04-16T08:01:13.732Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ClassLoader详解">
+<meta name="twitter:description" content="大家都知道，一个Java程序编译之后，是由若干个.class文件组织而成的一个完整的Java应用程序，当程序在运行时，即会调用该程序的一个入口函数来调用系统的相关功能，而这些功能都被封装在不同的class文件当中，所以经常要从这个class文件中要调用另外一个class文件中的方法，如果另外一个文件不存在的，则会引发系统异常。而程序在启动的时候，并不会一次性加载程序所要用的所有class文件，而是">
+<meta name="twitter:image" content="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3ClassLoader%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84.gif">
+
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>ClassLoader详解 | 张志强的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: false,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: true
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+    <script>
+        var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?0cbe0839852542956fe17f62ec5746ce";
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+
+
+</head></html>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/1_zzqhost.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">张志强</a></h1>
+        </hgroup>
+
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="false">
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class="no-result">No results found <i class="fa fa-spinner fa-pulse"></i></p>
+        
+
+
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">0</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">1</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">2</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">3</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">4</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">5</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/d">6</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">7</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">8</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">9</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">10</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">11</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">12</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">13</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">14</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">15</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">16</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">17</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">18</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/l">19</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">20</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">21</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">22</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">23</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">24</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/d">25</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">26</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">27</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/n">28</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/e">29</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">30</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">31</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">32</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">33</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">34</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">35</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">36</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">37</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">38</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/ ">39</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">40</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">41</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">42</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">43</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/1">44</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/6">45</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/3">46</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">47</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">48</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">49</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">50</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">51</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">52</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">53</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">54</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">55</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">56</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">57</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">58</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">59</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">60</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">61</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">62</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">63</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">64</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">65</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/l">66</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">67</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">68</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">69</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/1">70</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/6">71</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/3">72</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">73</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/c">74</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">75</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/m">76</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">77</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/ ">78</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/张">79</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/志">80</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/强">81</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/的">82</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">83</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">84</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">85</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">86</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/u">87</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">88</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/博">89</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/客">90</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/：">91</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">92</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">93</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">94</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/p">95</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/:">96</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">97</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">98</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">99</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/z">100</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/q">101</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">102</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">103</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">104</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">105</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">106</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/g">107</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">108</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">109</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">110</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/u">111</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/b">112</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/.">113</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">114</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">115</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">116</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/h">117</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/o">118</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/s">119</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/t">120</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/w">121</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">122</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/k">123</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/i">124</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="/">125</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">张志强</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/1_zzqhost.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">张志强</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我">
+</nav>
+      <div class="body-wrap"><article id="post-ClassLoader详解" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/08/14/ClassLoader详解/" class="article-date">
+      <time datetime="2017-08-14T03:14:28.000Z" itemprop="datePublished">2017-08-14</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      ClassLoader详解
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+    <div class="article-category tagcloud">
+    <a class="article-category-link" href="/categories/Android/">Android</a>
+    </div>
+
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/">Android</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ClassLoader/">ClassLoader</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/动态加载/">动态加载</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>大家都知道，一个Java程序编译之后，是由若干个.class文件组织而成的一个完整的Java应用程序，当程序在运行时，即会调用该程序的一个入口函数来调用系统的相关功能，而这些功能都被封装在不同的class文件当中，所以经常要从这个class文件中要调用另外一个class文件中的方法，如果另外一个文件不存在的，则会引发系统异常。而程序在启动的时候，并不会一次性加载程序所要用的所有class文件，而是根据程序的需要，通过Java的类加载机制（ClassLoader）来动态加载某个class文件到内存当中的，从而只有class文件被载入到了内存之后，才能被其它class所引用。所以ClassLoader就是用来动态加载class文件到内存当中用的。<br><a id="more"></a></p>
+<h1 id="Java默认提供的三个ClassLoader"><a href="#Java默认提供的三个ClassLoader" class="headerlink" title="Java默认提供的三个ClassLoader"></a>Java默认提供的三个ClassLoader</h1><ul>
+<li><strong>BootStrap ClassLoader:</strong> 称为启动类加载器，是Java类加载层次中最顶层的类加载器，负责加载JDK中的核心类库，如：rt.jar、resources.jar、charsets.jar等</li>
+<li><strong>Extension ClassLoader:</strong> 称为扩展类加载器，负责加载Java的扩展类库，默认加载JAVA_HOME/jre/lib/ext/目下的所有jar</li>
+<li><strong>App ClassLoader：</strong> 称为系统类加载器，负责加载应用程序classpath目录下的所有jar和class文件</li>
+</ul>
+<h1 id="双亲委托模型"><a href="#双亲委托模型" class="headerlink" title="双亲委托模型"></a>双亲委托模型</h1><h2 id="简化的ClassLoader-java"><a href="#简化的ClassLoader-java" class="headerlink" title="简化的ClassLoader.java"></a>简化的ClassLoader.java</h2><pre><code>public abstract class ClassLoader {
+    private ClassLoader parent;
+
+    ...
+
+    public Class&lt;?&gt; loadClass(String className) throws ClassNotFoundException {
+        return loadClass(className, false);
+    }
+
+    protected Class&lt;?&gt; loadClass(String className, boolean resolve) throws ClassNotFoundException {
+        Class&lt;?&gt; clazz = findLoadedClass(className);
+
+        if (clazz == null) {
+            ClassNotFoundException suppressed = null;
+            try {
+                clazz = parent.loadClass(className, false);
+            } catch (ClassNotFoundException e) {
+                suppressed = e;
+            }
+
+            if (clazz == null) {
+                try {
+                    clazz = findClass(className);
+                } catch (ClassNotFoundException e) {
+                    e.addSuppressed(suppressed);
+                    throw e;
+                }
+            }
+        }
+
+        return clazz;
+    }
+
+    protected Class&lt;?&gt; findClass(String className) throws ClassNotFoundException {
+        throw new ClassNotFoundException(className);
+    }
+
+    ...
+}
+</code></pre><h2 id="ClassLoader体系架构"><a href="#ClassLoader体系架构" class="headerlink" title="ClassLoader体系架构"></a>ClassLoader体系架构</h2><ul>
+<li>自底向上检查类是否加载</li>
+<li>自顶向下尝试加载类<br><img src="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3ClassLoader%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84.gif" alt="ClassLoader体系结构"></li>
+</ul>
+<h2 id="加载过程"><a href="#加载过程" class="headerlink" title="加载过程"></a>加载过程</h2><ul>
+<li>当前ClassLoader首先从自己已经加载的类中查询是否此类已经加载，如果已经加载则直接返回原来已经加载的类。</li>
+<li>每个类加载器都有自己的加载缓存，当一个类被加载了以后就会放入缓存，等下次加载的时候就可以直接返回了。</li>
+<li>当前classLoader的缓存中没有找到被加载的类的时候，委托父类加载器去加载，父类加载器采用同样的策略，首先查看自己的缓存，然后委托父类的父类去加载，一直到bootstrp ClassLoader.</li>
+<li>当所有的父类加载器都没有加载的时候，再由当前的类加载器加载，并将其放入它自己的缓存中，以便下次有加载请求的时候直接返回。</li>
+</ul>
+<h2 id="Java为什么要采用这样的委托机制？"><a href="#Java为什么要采用这样的委托机制？" class="headerlink" title="Java为什么要采用这样的委托机制？"></a>Java为什么要采用这样的委托机制？</h2><ul>
+<li>理解这个问题，我们引入另外一个关于Classloader的概念<strong>命名空间</strong></li>
+<li>它是指要确定某一个类，需要类的全限定名以及加载此类的ClassLoader来共同确定。</li>
+<li>也就是说即使两个类的全限定名是相同的，但是因为不同的ClassLoader加载了此类，那么在JVM中它是不同的类。</li>
+</ul>
+<p>明白了命名空间以后，我们再来看看委托模型。</p>
+<ul>
+<li>采用了委托模型以后加大了不同的 ClassLoader的交互能力，比如上面说的，我们JDK本生提供的类库，比如hashmap,linkedlist等等，这些类由bootstrp 类加载器加载了以后，无论你程序中有多少个类加载器，那么这些类其实都是可以共享的，这样就避免了不同的类加载器加载了同样名字的不同类以后造成混乱。</li>
+<li>再比如假设有一个开发者自己编写了一个名为Java.lang.Object的类，想借此欺骗JVM。现在他要使用自定义ClassLoader来加载自己编写的java.lang.Object类。然而幸运的是，双亲委托模型不会让他成功。因为JVM会优先在Bootstrap ClassLoader的路径下找到java.lang.Object类，并载入它。<strong>思考:</strong> 如果使用自定义的类打破了双亲模式呢, 会不会就成功了呢? (下文给出答案)</li>
+</ul>
+<h2 id="Java的类加载是否一定遵循双亲委托模型？"><a href="#Java的类加载是否一定遵循双亲委托模型？" class="headerlink" title="Java的类加载是否一定遵循双亲委托模型？"></a>Java的类加载是否一定遵循双亲委托模型？</h2><ul>
+<li>这个答案是否定的。</li>
+<li>双亲委托模型只是JDK提供的ClassLoader类的实现方式。</li>
+<li>在实际开发中，我们可以通过自定义ClassLoader，并重写父类的loadClass方法，来打破这一机制。</li>
+</ul>
+<h1 id="自定义ClassLoader"><a href="#自定义ClassLoader" class="headerlink" title="自定义ClassLoader"></a>自定义ClassLoader</h1><p>在自定义Classloader的时候，我们需要注意几个重要的方法</p>
+<h2 id="loadClass-方法"><a href="#loadClass-方法" class="headerlink" title="loadClass 方法"></a>loadClass 方法</h2><pre><code>protected Class&lt;?&gt; loadClass(String className, boolean resolve) throws ClassNotFoundException {
+    Class&lt;?&gt; clazz = findLoadedClass(className);
+
+    if (clazz == null) {
+        ClassNotFoundException suppressed = null;
+        try {
+            clazz = parent.loadClass(className, false);
+        } catch (ClassNotFoundException e) {
+            suppressed = e;
+        }
+
+        if (clazz == null) {
+            try {
+                clazz = findClass(className);
+            } catch (ClassNotFoundException e) {
+                e.addSuppressed(suppressed);
+                throw e;
+            }
+        }
+    }
+
+    return clazz;
+}
+</code></pre><ul>
+<li>需要注意public Class&lt;?&gt;loadClass(String name) throws ClassNotFoundException没有被标记为final, 也就意味着我们是可以override这个方法的，也就是说双亲委托机制是可以打破的。</li>
+</ul>
+<h2 id="findClass-方法"><a href="#findClass-方法" class="headerlink" title="findClass 方法"></a>findClass 方法</h2><pre><code>protected Class&lt;?&gt; findClass(String className) throws ClassNotFoundException {
+    throw new ClassNotFoundException(className);
+}
+</code></pre><ul>
+<li>我们可以看出此方法默认的实现是直接抛出异常</li>
+<li>其实这个方法就是留给我们应用程序来override的。</li>
+<li>那么具体的实现就看你的实现逻辑了，你可以从磁盘读取，也可以从网络上获取class文件的字节流，获取class二进制了以后就可以交给defineClass来实现进一步的加载。</li>
+<li>defineClass我们再下面再来描述。</li>
+<li>ok，通过上面的分析，我们可以得出<strong>结论：</strong> 我们在写自己的ClassLoader的时候，如果想遵循双亲委托机制，则只需要overridefindClass.</li>
+</ul>
+<h2 id="defineClass-方法"><a href="#defineClass-方法" class="headerlink" title="defineClass 方法"></a>defineClass 方法</h2><pre><code>protected final Class&lt;?&gt; defineClass(String name, byte[] b, int off, int len) throws ClassFormatError {     
+    return defineClass(name, b, off, len, null);
+}
+</code></pre><ul>
+<li>从上面的代码我们看出此方法被定义为了final，这也就意味着此方法不能被Override，其实这也是jvm留给我们的唯一的入口，通过这个唯一的入口，jvm保证了类文件必须符合Java虚拟机规范规定的类的定义。此方法最后会调用native的方法来实现真正的类的加载工作。</li>
+<li><strong>思考问题</strong><ul>
+<li>假如我们自己写了一个java.lang.String的类，我们是否可以替换调JDK本身的类？</li>
+<li>答案是否定的。我们不能实现。</li>
+<li>为什么呢？我看很多网上解释是说双亲委托机制解决这个问题，其实不是非常的准确。因为双亲委托机制是可以打破的，你完全可以自己写一个classLoader来加载自己写的java.lang.String类，但是你会发现也不会加载成功，具体就是因为针对java.*开头的类，jvm的实现中已经保证了必须由bootstrp来加载。</li>
+</ul>
+</li>
+</ul>
+<h2 id="总结-如何实现自定义ClassLoader"><a href="#总结-如何实现自定义ClassLoader" class="headerlink" title="总结: 如何实现自定义ClassLoader"></a>总结: 如何实现自定义ClassLoader</h2><ol>
+<li>继承java.lang.ClassLoader</li>
+<li>重写父类的findClass方法</li>
+</ol>
+<h1 id="Android平台的ClassLoader"><a href="#Android平台的ClassLoader" class="headerlink" title="Android平台的ClassLoader"></a>Android平台的ClassLoader</h1><ul>
+<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-Android%E5%B9%B3%E5%8F%B0ClassLoader%E7%BB%A7%E6%89%BF%E6%A0%91.png" alt="ClassLoader继承 树"></li>
+</ul>
+<h2 id="ClassLoader"><a href="#ClassLoader" class="headerlink" title="ClassLoader"></a>ClassLoader</h2><ul>
+<li>java.lang.ClassLoader是所有ClassLoader的最终父类</li>
+<li>Android中默认无父构造器传入的情况下，默认父构造器为一个PathClassLoader且此PathClassLoader父构造器为BootClassLoader。</li>
+<li>ClassLoader中重要的方法是loadClass(String name)，其他的子类都继承了此方法且没有进行复写。它实现了双亲委托模型, 这种模型并不是一个强制性的约束模型，比如你可以继承ClassLoader复写loadCalss方法来破坏这种模型，只不过双亲委派模是一种被推荐的实现类加载器的方式，而且jdk1.2以后已经不提倡用户在覆盖loadClass方法，而应该把自己的类加载逻辑写到findClass中</li>
+</ul>
+<h2 id="BootClassLoader"><a href="#BootClassLoader" class="headerlink" title="BootClassLoader"></a>BootClassLoader</h2><ul>
+<li>和java虚拟机中不同的是BootClassLoader是ClassLoader内部类,由java代码实现而不是c++实现,是Android平台上所有ClassLoader的最终parent,这个内部类是包内可见,所以我们没法使用。</li>
+</ul>
+<h2 id="URLClassLoader"><a href="#URLClassLoader" class="headerlink" title="URLClassLoader"></a>URLClassLoader</h2><ul>
+<li>只能用于加载jar文件，但是由于 dalvik 不能直接识别jar，所以在 Android 中无法使用这个加载器。</li>
+</ul>
+<h2 id="BaseDexClassLoader"><a href="#BaseDexClassLoader" class="headerlink" title="BaseDexClassLoader"></a>BaseDexClassLoader</h2><ul>
+<li>PathClassLoader和DexClassLoader都继承自BaseDexClassLoader,其中的主要逻辑都是在BaseDexClassLoader完成的。这些源码在<a href="https://android.googlesource.com/platform/libcore/+/android-7.1.1_r50/dalvik/src/main/java/dalvik/system/" target="_blank" rel="noopener">java/dalvik/system</a>中。</li>
+<li>先看下BaseDexClassLoader的构造方式：<ul>
+<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-BaseDexClassLoader%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png" alt="BaseDexClassLoader构造方法 "></li>
+</ul>
+</li>
+<li>BaseDexClassLoader的构造函数包含四个参数，分别为：<ul>
+<li><strong>dexPath</strong> 指目标类所在的APK或jar文件的路径,类装载器将从该路径中寻找指定的目标类,该类必须是APK或jar的全路径.如果要包含多个路径,路径之间必须使用特定的分割符分隔,特定的分割符可以使用System.getProperty(“path.separtor”)获得。上面”支持加载APK、DEX和JAR，也可以从SD卡进行加载”指的就是这个路径，最终做的是将dexPath路径上的文件ODEX优化到内部位置optimizedDirectory，然后，再进行加载的。</li>
+<li><strong>File optimizedDirectory</strong> 由于dex文件被包含在APK或者Jar文件中,因此在装载目标类之前需要先从APK或Jar文件中解压出dex文件,该参数就是制定解压出的dex 文件存放的路径。这也是对apk中dex根据平台进行ODEX优化的过程。其实APK是一个程序压缩包，里面包含dex文件，ODEX优化就是把包里面的执行程序提取出来，就变成ODEX文件，因为你提取出来了，系统第一次启动的时候就不用去解压程序压缩包的程序，少了一个解压的过程。这样的话系统启动就加快了。为什么说是第一次呢？是因为DEX版本的也只有第一次会解压执行程序到 /data/dalvik-cache（针对PathClassLoader）或者optimizedDirectory(针对DexClassLoader）目录，之后也是直接读取目录下的的dex文件，所以第二次启动就和正常的差不多了。当然这只是简单的理解，实际生成的ODEX还有一定的优化作用。ClassLoader只能加载内部存储路径中的dex文件，所以这个路径必须为内部路径。</li>
+<li><strong>libPath</strong> 指目标类中所使用的C/C++库存放的路径</li>
+<li><strong>classload</strong> 是指该装载器的父装载器,一般为当前执行类的装载器，例如在Android中以context.getClassLoader()作为父装载器。</li>
+</ul>
+</li>
+</ul>
+<h2 id="DexClassLoader"><a href="#DexClassLoader" class="headerlink" title="DexClassLoader"></a>DexClassLoader</h2><ul>
+<li>再看下DexClassLoader构造方法：<ul>
+<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-DexClassLoader%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0.png" alt="DexClassLoader构造方法"></li>
+</ul>
+</li>
+<li>DexClassLoader支持加载APK、DEX和JAR，也可以从SD卡进行加载。</li>
+<li>上面说dalvik不能直接识别jar,DexClassLoader却可以加载jar文件,这难道不矛盾吗?</li>
+<li>其实在BaseDexClassLoader里对”.jar”,”.zip”,”.apk”,”.dex”后缀的文件最后都会生成一个对应的dex文件,所以最终处理的还是dex文件,而URLClassLoader并没有做类似的处理。</li>
+<li>一般我们都是用这个DexClassLoader来作为动态加载的加载器。</li>
+</ul>
+<h2 id="PathClassLoader"><a href="#PathClassLoader" class="headerlink" title="PathClassLoader"></a>PathClassLoader</h2><ul>
+<li>构造方法如下<ul>
+<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-PathClassLoader%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png" alt></li>
+</ul>
+</li>
+<li>很简单明了，可以看出PathClassLoader没有将optimizedDirectory置为Null,也就是没设置优化后的存放路径。其实optimizedDirectory为null时的默认路径就是/data/dalvik-cache 目录。</li>
+<li>PathClassLoader是用来加载Android系统类和应用的类，并且不建议开发者使用。</li>
+</ul>
+<h2 id="BaseDexClassLoader加载class的过程"><a href="#BaseDexClassLoader加载class的过程" class="headerlink" title="BaseDexClassLoader加载class的过程"></a>BaseDexClassLoader加载class的过程</h2><pre><code>#BaseDexClassLoader
+@Override
+protected Class&lt;?&gt; findClass(String name) throws ClassNotFoundException {
+    Class clazz = pathList.findClass(name);
+    if (clazz == null) {
+        throw new ClassNotFoundException(name);
+    }
+    return clazz;
+}
+#DexPathList
+public Class findClass(String name) {
+    for (Element element : dexElements) {
+        DexFile dex = element.dexFile;
+        if (dex != null) {
+            Class clazz = dex.loadClassBinaryName(name, definingContext);
+          if (clazz != null) {
+              return clazz;
+          }
+        }
+    }
+    return null;
+}
+#DexFile
+public Class loadClassBinaryName(String name, ClassLoader loader) {
+    return defineClass(name, loader, mCookie);
+}
+private native static Class defineClass(String name, ClassLoader loader, int cookie);
+</code></pre><ul>
+<li>可以看出，BaseDexClassLoader中有个pathList对象，pathList中包含一个DexFile的数组dexElements</li>
+<li>由上面分析知道，dexPath传入的原始dex(.apk,.zip,.jar等)文件在optimizedDirectory文件夹中生成相应的优化后的odex文件，dexElements数组就是这些odex文件的集合，如果不分包一般这个数组只有一个Element元素，也就只有一个DexFile文件</li>
+<li>而对于类加载呢，就是遍历这个集合，通过DexFile去寻找。最终调用native方法的defineClass。</li>
+</ul>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>对于我来说, 写文章感觉最后不写个总结很别扭, 所以在这里再写一个总结, 其实也没什么可写的, 就简单的说两句吧, 这篇主要是一个入门, 写了Java中的ClassLoader和双亲委托模型, 然后简单的介绍了一下Android中的ClassLoader, 总感觉意犹未尽, 以后有时间, 再来好好的研究一下Android中的类加载,和dexopt, dex2oat这些东东吧.</p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2017/08/14/ClassLoader详解/">ClassLoader详解</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">张志强</a></p>
+        <p><span>发布时间:</span>2017-08-14, 11:14:28</p>
+        <p><span>最后更新:</span>2019-04-16, 16:01:13</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2017/08/14/ClassLoader详解/" title="ClassLoader详解">http://zzqhost.com/2017/08/14/ClassLoader详解/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://zzqhost.com/2017/08/14/ClassLoader详解/　　作者: 张志强" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target="_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+            <div id="article-nav-newer" class="article-nav-title">
+                <a href="/2017/11/27/初入路由器刷机/">
+                    初入路由器刷机
+                </a>
+            </div>
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/07/07/Android快速加载Dex/">
+                    Android快速加载Dex
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Java默认提供的三个ClassLoader"><span class="toc-number">1.</span> <span class="toc-text">Java默认提供的三个ClassLoader</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#双亲委托模型"><span class="toc-number">2.</span> <span class="toc-text">双亲委托模型</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#简化的ClassLoader-java"><span class="toc-number">2.1.</span> <span class="toc-text">简化的ClassLoader.java</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ClassLoader体系架构"><span class="toc-number">2.2.</span> <span class="toc-text">ClassLoader体系架构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#加载过程"><span class="toc-number">2.3.</span> <span class="toc-text">加载过程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Java为什么要采用这样的委托机制？"><span class="toc-number">2.4.</span> <span class="toc-text">Java为什么要采用这样的委托机制？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Java的类加载是否一定遵循双亲委托模型？"><span class="toc-number">2.5.</span> <span class="toc-text">Java的类加载是否一定遵循双亲委托模型？</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#自定义ClassLoader"><span class="toc-number">3.</span> <span class="toc-text">自定义ClassLoader</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#loadClass-方法"><span class="toc-number">3.1.</span> <span class="toc-text">loadClass 方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#findClass-方法"><span class="toc-number">3.2.</span> <span class="toc-text">findClass 方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#defineClass-方法"><span class="toc-number">3.3.</span> <span class="toc-text">defineClass 方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结-如何实现自定义ClassLoader"><span class="toc-number">3.4.</span> <span class="toc-text">总结: 如何实现自定义ClassLoader</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Android平台的ClassLoader"><span class="toc-number">4.</span> <span class="toc-text">Android平台的ClassLoader</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#ClassLoader"><span class="toc-number">4.1.</span> <span class="toc-text">ClassLoader</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#BootClassLoader"><span class="toc-number">4.2.</span> <span class="toc-text">BootClassLoader</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#URLClassLoader"><span class="toc-number">4.3.</span> <span class="toc-text">URLClassLoader</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#BaseDexClassLoader"><span class="toc-number">4.4.</span> <span class="toc-text">BaseDexClassLoader</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DexClassLoader"><span class="toc-number">4.5.</span> <span class="toc-text">DexClassLoader</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PathClassLoader"><span class="toc-number">4.6.</span> <span class="toc-text">PathClassLoader</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#BaseDexClassLoader加载class的过程"><span class="toc-number">4.7.</span> <span class="toc-text">BaseDexClassLoader加载class的过程</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#总结"><span class="toc-number">5.</span> <span class="toc-text">总结</span></a></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录" title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"ClassLoader详解　| 张志强的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <section class="youyan" id="comments">
+    <script>
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = 'http://v2.uyan.cc/code/uyan.js?uid=2123716';
+            (d.head || d.body).appendChild(s);
+        }
+    </script>
+    
+    <script> loadComment(); </script>
+
+    <div id="uyan_frame"></div>
+</section>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/2017/11/27/初入路由器刷机/" title="上一篇: 初入路由器刷机">
+                <i class="fa fa-angle-left"></i>
+            </a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/07/07/Android快速加载Dex/" title="下一篇: Android快速加载Dex">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/03/10/Android中JSBridge的原理与实现/">Android中JSBridge的原理与实现</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/02/24/感冒的分类及治疗/">感冒的分类及治疗</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/01/03/学习nodejs第一天/">学习nodejs第一天</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/27/初入路由器刷机/">初入路由器刷机</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/08/14/ClassLoader详解/">ClassLoader详解</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/07/Android快速加载Dex/">Android快速加载Dex</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/05/字符编码/">字符编码</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/24/Retrofit2学习笔记/">Retrofit2学习笔记</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/18/Android打渠道包方案总结/">Android打渠道包方案总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/17/Android签名原理剖析/">Android签名剖析</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/13/productFlavors的高级用法/">productFlavors的高级用法</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客5/">使用hexo搭建静态博客(五)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客4/">使用hexo搭建静态博客(四)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客3/">使用hexo搭建静态博客(三)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客2/">使用hexo搭建静态博客(二)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/05/06/使用hexo搭建静态博客1/">使用hexo搭建静态博客(一)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/04/20/在Tomcat中部署web项目/">在Tomcat中部署web项目</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/11/通过hexo搭建个人博客/">通过hexo搭建个人博客</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/01/03/理解RESTful架构/">理解RESTful架构</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2017-2019 张志强
+            </div>
+            <div class="footer-right">
+                <!--<a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>-->
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+                Hosted by <a href="https://pages.coding.me" target="_blank" style="font-weight: bold">Coding Pages</a>
+                and Github
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style="display:none">
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style="display:none">
+                        <span id="page-visit" title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

@@ -23,7 +23,7 @@
 <meta property="og:site_name" content="张志强的博客">
 <meta property="og:description" content="git pull时可以加上–rebase参数, 使之不产生Merge点, 保证了代码的整洁">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-04-16T11:24:08.975Z">
+<meta property="og:updated_time" content="2019-04-16T11:26:11.341Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="给git pull加上默认rebase功能">
 <meta name="twitter:description" content="git pull时可以加上–rebase参数, 使之不产生Merge点, 保证了代码的整洁">
@@ -505,7 +505,7 @@
 <li>但每次都加–rebase似乎有些麻烦，我们可以指定某个分支在执行git pull时默认采用rebase方式：</li>
 </ul>
 <h2 id="配置的两个步骤"><a href="#配置的两个步骤" class="headerlink" title="配置的两个步骤"></a>配置的两个步骤</h2><h3 id="对于已经现有仓库和分支进行配置"><a href="#对于已经现有仓库和分支进行配置" class="headerlink" title="对于已经现有仓库和分支进行配置"></a>对于已经现有仓库和分支进行配置</h3><ul>
-<li>$ git config branch.dev.rebase true</li>
+<li>命令：<br>  $ git config branch.dev.rebase true</li>
 <li>请使用以上命令时将 “dev” 修改成您自己本地的分支名字.</li>
 <li><strong>提示</strong>:<ul>
 <li>必须cd到你工程的目录下，才能更改分支的配置；</li>
@@ -514,8 +514,7 @@
 </li>
 </ul>
 <h3 id="对于新建分支生效"><a href="#对于新建分支生效" class="headerlink" title="对于新建分支生效"></a>对于新建分支生效</h3><ul>
-<li>如果你觉得所有的分支都应该用rebase，那就设置：</li>
-<li>$ git config –global branch.autosetuprebase always</li>
+<li>如果你觉得所有的分支都应该用rebase，那就使用以下命令进行设置：<br>  $ git config –global branch.autosetuprebase always</li>
 <li>这样对于新建的分支都会设定上面的rebase=true了。已经创建好的分支还是需要手动配置的。</li>
 </ul>
 <h1 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接:"></a>参考链接:</h1><ul>
@@ -532,7 +531,7 @@
         <p><span>本文标题:</span><a href="/2019/04/16/给git-pull加上默认rebase功能/">给git pull加上默认rebase功能</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">张志强</a></p>
         <p><span>发布时间:</span>2019-04-16, 19:18:48</p>
-        <p><span>最后更新:</span>2019-04-16, 19:24:08</p>
+        <p><span>最后更新:</span>2019-04-16, 19:26:11</p>
         <p>
             <span>原始链接:</span><a class="post-url" href="/2019/04/16/给git-pull加上默认rebase功能/" title="给git pull加上默认rebase功能">http://zzqhost.com/2019/04/16/给git-pull加上默认rebase功能/</a>
             <span class="copy-path" data-clipboard-text="原文: http://zzqhost.com/2019/04/16/给git-pull加上默认rebase功能/　　作者: 张志强" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>

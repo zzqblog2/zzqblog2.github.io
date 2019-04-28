@@ -23,16 +23,16 @@
 <meta property="og:site_name" content="张志强的博客">
 <meta property="og:description" content="大家都知道，一个Java程序编译之后，是由若干个.class文件组织而成的一个完整的Java应用程序，当程序在运行时，即会调用该程序的一个入口函数来调用系统的相关功能，而这些功能都被封装在不同的class文件当中，所以经常要从这个class文件中要调用另外一个class文件中的方法，如果另外一个文件不存在的，则会引发系统异常。而程序在启动的时候，并不会一次性加载程序所要用的所有class文件，而是">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3ClassLoader%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84.gif">
-<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-Android%E5%B9%B3%E5%8F%B0ClassLoader%E7%BB%A7%E6%89%BF%E6%A0%91.png">
-<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-BaseDexClassLoader%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png">
-<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-DexClassLoader%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0.png">
-<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-PathClassLoader%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png">
-<meta property="og:updated_time" content="2019-04-16T08:01:13.732Z">
+<meta property="og:image" content="http://zzqhost.com/images/ClassLoader%E8%AF%A6%E8%A7%A3ClassLoader%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84.gif">
+<meta property="og:image" content="http://zzqhost.com/images/ClassLoader%E8%AF%A6%E8%A7%A3-Android%E5%B9%B3%E5%8F%B0ClassLoader%E7%BB%A7%E6%89%BF%E6%A0%91.png">
+<meta property="og:image" content="http://zzqhost.com/images/ClassLoader%E8%AF%A6%E8%A7%A3-BaseDexClassLoader%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png">
+<meta property="og:image" content="http://zzqhost.com/images/ClassLoader%E8%AF%A6%E8%A7%A3-DexClassLoader%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0.png">
+<meta property="og:image" content="http://zzqhost.com/images/ClassLoader%E8%AF%A6%E8%A7%A3-PathClassLoader%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png">
+<meta property="og:updated_time" content="2019-04-28T12:15:07.251Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ClassLoader详解">
 <meta name="twitter:description" content="大家都知道，一个Java程序编译之后，是由若干个.class文件组织而成的一个完整的Java应用程序，当程序在运行时，即会调用该程序的一个入口函数来调用系统的相关功能，而这些功能都被封装在不同的class文件当中，所以经常要从这个class文件中要调用另外一个class文件中的方法，如果另外一个文件不存在的，则会引发系统异常。而程序在启动的时候，并不会一次性加载程序所要用的所有class文件，而是">
-<meta name="twitter:image" content="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3ClassLoader%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84.gif">
+<meta name="twitter:image" content="http://zzqhost.com/images/ClassLoader%E8%AF%A6%E8%A7%A3ClassLoader%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84.gif">
 
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
@@ -550,7 +550,7 @@
 }
 </code></pre><h2 id="ClassLoader体系架构"><a href="#ClassLoader体系架构" class="headerlink" title="ClassLoader体系架构"></a>ClassLoader体系架构</h2><ul>
 <li>自底向上检查类是否加载</li>
-<li>自顶向下尝试加载类<br><img src="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3ClassLoader%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84.gif" alt="ClassLoader体系结构"></li>
+<li>自顶向下尝试加载类<br><img src="/images/ClassLoader%E8%AF%A6%E8%A7%A3ClassLoader%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84.gif" alt="ClassLoader体系结构"></li>
 </ul>
 <h2 id="加载过程"><a href="#加载过程" class="headerlink" title="加载过程"></a>加载过程</h2><ul>
 <li>当前ClassLoader首先从自己已经加载的类中查询是否此类已经加载，如果已经加载则直接返回原来已经加载的类。</li>
@@ -627,7 +627,7 @@
 <li>重写父类的findClass方法</li>
 </ol>
 <h1 id="Android平台的ClassLoader"><a href="#Android平台的ClassLoader" class="headerlink" title="Android平台的ClassLoader"></a>Android平台的ClassLoader</h1><ul>
-<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-Android%E5%B9%B3%E5%8F%B0ClassLoader%E7%BB%A7%E6%89%BF%E6%A0%91.png" alt="ClassLoader继承 树"></li>
+<li><img src="/images/ClassLoader%E8%AF%A6%E8%A7%A3-Android%E5%B9%B3%E5%8F%B0ClassLoader%E7%BB%A7%E6%89%BF%E6%A0%91.png" alt="ClassLoader继承 树"></li>
 </ul>
 <h2 id="ClassLoader"><a href="#ClassLoader" class="headerlink" title="ClassLoader"></a>ClassLoader</h2><ul>
 <li>java.lang.ClassLoader是所有ClassLoader的最终父类</li>
@@ -643,7 +643,7 @@
 <h2 id="BaseDexClassLoader"><a href="#BaseDexClassLoader" class="headerlink" title="BaseDexClassLoader"></a>BaseDexClassLoader</h2><ul>
 <li>PathClassLoader和DexClassLoader都继承自BaseDexClassLoader,其中的主要逻辑都是在BaseDexClassLoader完成的。这些源码在<a href="https://android.googlesource.com/platform/libcore/+/android-7.1.1_r50/dalvik/src/main/java/dalvik/system/" target="_blank" rel="noopener">java/dalvik/system</a>中。</li>
 <li>先看下BaseDexClassLoader的构造方式：<ul>
-<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-BaseDexClassLoader%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png" alt="BaseDexClassLoader构造方法 "></li>
+<li><img src="/images/ClassLoader%E8%AF%A6%E8%A7%A3-BaseDexClassLoader%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png" alt="BaseDexClassLoader构造方法 "></li>
 </ul>
 </li>
 <li>BaseDexClassLoader的构造函数包含四个参数，分别为：<ul>
@@ -656,7 +656,7 @@
 </ul>
 <h2 id="DexClassLoader"><a href="#DexClassLoader" class="headerlink" title="DexClassLoader"></a>DexClassLoader</h2><ul>
 <li>再看下DexClassLoader构造方法：<ul>
-<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-DexClassLoader%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0.png" alt="DexClassLoader构造方法"></li>
+<li><img src="/images/ClassLoader%E8%AF%A6%E8%A7%A3-DexClassLoader%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0.png" alt="DexClassLoader构造方法"></li>
 </ul>
 </li>
 <li>DexClassLoader支持加载APK、DEX和JAR，也可以从SD卡进行加载。</li>
@@ -666,7 +666,7 @@
 </ul>
 <h2 id="PathClassLoader"><a href="#PathClassLoader" class="headerlink" title="PathClassLoader"></a>PathClassLoader</h2><ul>
 <li>构造方法如下<ul>
-<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/ClassLoader%E8%AF%A6%E8%A7%A3-PathClassLoader%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png" alt></li>
+<li><img src="/images/ClassLoader%E8%AF%A6%E8%A7%A3-PathClassLoader%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png" alt></li>
 </ul>
 </li>
 <li>很简单明了，可以看出PathClassLoader没有将optimizedDirectory置为Null,也就是没设置优化后的存放路径。其实optimizedDirectory为null时的默认路径就是/data/dalvik-cache 目录。</li>
@@ -716,7 +716,7 @@ private native static Class defineClass(String name, ClassLoader loader, int coo
         <p><span>本文标题:</span><a href="/2017/08/14/ClassLoader详解/">ClassLoader详解</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">张志强</a></p>
         <p><span>发布时间:</span>2017-08-14, 11:14:28</p>
-        <p><span>最后更新:</span>2019-04-16, 16:01:13</p>
+        <p><span>最后更新:</span>2019-04-28, 20:15:07</p>
         <p>
             <span>原始链接:</span><a class="post-url" href="/2017/08/14/ClassLoader详解/" title="ClassLoader详解">http://zzqhost.com/2017/08/14/ClassLoader详解/</a>
             <span class="copy-path" data-clipboard-text="原文: http://zzqhost.com/2017/08/14/ClassLoader详解/　　作者: 张志强" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>

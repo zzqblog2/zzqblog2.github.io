@@ -23,13 +23,13 @@
 <meta property="og:site_name" content="张志强的博客">
 <meta property="og:description" content="本篇介绍了Android中的apk的签名原理，包括老的签名方法，和新的Apk Signature Scheme V2介绍。使大家能对这一块有一个大致的了解，为快速打渠道包打下理论基础">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-1.png">
-<meta property="og:image" content="http://7tsyym.com1.z0.glb.clouddn.com/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-2.png">
-<meta property="og:updated_time" content="2019-04-16T08:01:13.732Z">
+<meta property="og:image" content="http://zzqhost.com/images/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-1.png">
+<meta property="og:image" content="http://zzqhost.com/images/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-2.png">
+<meta property="og:updated_time" content="2019-04-28T12:17:26.868Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Android签名剖析">
 <meta name="twitter:description" content="本篇介绍了Android中的apk的签名原理，包括老的签名方法，和新的Apk Signature Scheme V2介绍。使大家能对这一块有一个大致的了解，为快速打渠道包打下理论基础">
-<meta name="twitter:image" content="http://7tsyym.com1.z0.glb.clouddn.com/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-1.png">
+<meta name="twitter:image" content="http://zzqhost.com/images/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-1.png">
 
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
@@ -613,7 +613,7 @@
 v2SigningEnabled false
 </code></pre></li>
 </ol>
-<h2 id="新的签名方案就是一种扩展的zip格式"><a href="#新的签名方案就是一种扩展的zip格式" class="headerlink" title="新的签名方案就是一种扩展的zip格式"></a>新的签名方案就是一种扩展的zip格式</h2><p>APK Signature Scheme v2其实是对zip格式进行了一个扩展，如图所示<br><img src="http://7tsyym.com1.z0.glb.clouddn.com/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-1.png" alt="对比zip格式 "></p>
+<h2 id="新的签名方案就是一种扩展的zip格式"><a href="#新的签名方案就是一种扩展的zip格式" class="headerlink" title="新的签名方案就是一种扩展的zip格式"></a>新的签名方案就是一种扩展的zip格式</h2><p>APK Signature Scheme v2其实是对zip格式进行了一个扩展，如图所示<br><img src="/images/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-1.png" alt="对比zip格式 "></p>
 <p>大家可以看到：</p>
 <ul>
 <li>新的签名方案会在ZIP文件格式的 Central Directory 区块所在文件位置的前面添加一个APK Signing Block区块，下面按照ZIP文件的格式来分析新应用签名方案签名后的APK包。</li>
@@ -622,7 +622,7 @@ v2SigningEnabled false
 <li>APK Signing Block</li>
 <li>ZIP Central Directory</li>
 <li>ZIP End of Central Directory</li>
-<li><img src="http://7tsyym.com1.z0.glb.clouddn.com/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-2.png" alt="扩展后的zip格式"></li>
+<li><img src="/images/Android%E7%AD%BE%E5%90%8D%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90apksignatureV2-2.png" alt="扩展后的zip格式"></li>
 </ul>
 </li>
 <li><strong>其中</strong>：应用签名方案的签名信息会被保存在区块2（APK Signing Block）中，而<strong>区块1</strong>（Contents of ZIP entries）、<strong>区块3</strong>（ZIP Central Directory）、<strong>区块4</strong>（ZIP End of Central Directory）是受保护的，在签名后任何对区块1、3、4的修改都逃不过新的应用签名方案的检查。</li>
@@ -786,7 +786,7 @@ Number of signers: 1
         <p><span>本文标题:</span><a href="/2017/06/17/Android签名原理剖析/">Android签名剖析</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">张志强</a></p>
         <p><span>发布时间:</span>2017-06-17, 22:30:42</p>
-        <p><span>最后更新:</span>2019-04-16, 16:01:13</p>
+        <p><span>最后更新:</span>2019-04-28, 20:17:26</p>
         <p>
             <span>原始链接:</span><a class="post-url" href="/2017/06/17/Android签名原理剖析/" title="Android签名剖析">http://zzqhost.com/2017/06/17/Android签名原理剖析/</a>
             <span class="copy-path" data-clipboard-text="原文: http://zzqhost.com/2017/06/17/Android签名原理剖析/　　作者: 张志强" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
